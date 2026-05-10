@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import pickle
 import os
 
@@ -26,36 +25,73 @@ def train_and_save_model():
     X = df[['Address', 'NoOfBedrooms', 'NoOfBathrooms', 'AreaSqYards']]
     y = df['Price']
 
-    # Encode the Address column using Label Encoding
-    le = LabelEncoder()
-    X['Address_encoded'] = le.fit_transform(X['Address'])
-    # Drop the original Address column
-    X = X.drop('Address', axis=1)
+    # Apply log transformation to target
+    y_log = np.log1p(y)
+
+    # One-hot encode the Address column
+    X = pd.get_dummies(X, columns=['Address'], prefix='Address', drop_first=False)
 
     # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train_log, y_test_log = train_test_split(X, y_log, test_size=0.2, random_state=42)
+
+    # Store the column order for later use in prediction
+    training_columns = X_train.columns.tolist()
 
     # Train Linear Regression
     lr = LinearRegression()
-    lr.fit(X_train, y_train)
-    lr_pred = lr.predict(X_test)
-    lr_r2 = r2_score(y_test, lr_pred)
-    print(f"Linear Regression R² Score: {lr_r2}")
+    lr.fit(X_train, y_train_log)
+    lr_pred_test_log = lr.predict(X_test)
+    lr_pred_train_log = lr.predict(X_train)
+    # Convert predictions back to original scale
+    lr_pred_test = np.expm1(lr_pred_test_log)
+    lr_pred_train = np.expm1(lr_pred_train_log)
+    # Convert y_train_log and y_test_log back to original scale for metrics
+    y_train = np.expm1(y_train_log)
+    y_test = np.expm1(y_test_log)
+    # Metrics for Linear Regression
+    lr_r2_test = r2_score(y_test, lr_pred_test)
+    lr_r2_train = r2_score(y_train, lr_pred_train)
+    lr_rmse_test = np.sqrt(mean_squared_error(y_test, lr_pred_test))
+    lr_rmse_train = np.sqrt(mean_squared_error(y_train, lr_pred_train))
+    lr_mae_test = mean_absolute_error(y_test, lr_pred_test)
+    lr_mae_train = mean_absolute_error(y_train, lr_pred_train)
+    print(f"Linear Regression -> Train R²: {lr_r2_train:.4f}, Test R²: {lr_r2_test:.4f}")
+    print(f"Linear Regression -> Train RMSE: {lr_rmse_train:.2f}, Test RMSE: {lr_rmse_test:.2f}")
+    print(f"Linear Regression -> Train MAE: {lr_mae_train:.2f}, Test MAE: {lr_mae_test:.2f}")
 
     # Train Random Forest
     rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
-    rf_pred = rf.predict(X_test)
-    rf_r2 = r2_score(y_test, rf_pred)
-    print(f"Random Forest R² Score: {rf_r2}")
+    rf.fit(X_train, y_train_log)
+    rf_pred_test_log = rf.predict(X_test)
+    rf_pred_train_log = rf.predict(X_train)
+    # Convert predictions back to original scale
+    rf_pred_test = np.expm1(rf_pred_test_log)
+    rf_pred_train = np.expm1(rf_pred_train_log)
+    # Metrics for Random Forest
+    rf_r2_test = r2_score(y_test, rf_pred_test)
+    rf_r2_train = r2_score(y_train, rf_pred_train)
+    rf_rmse_test = np.sqrt(mean_squared_error(y_test, rf_pred_test))
+    rf_rmse_train = np.sqrt(mean_squared_error(y_train, rf_pred_train))
+    rf_mae_test = mean_absolute_error(y_test, rf_pred_test)
+    rf_mae_train = mean_absolute_error(y_train, rf_pred_train)
+    print(f"Random Forest -> Train R²: {rf_r2_train:.4f}, Test R²: {rf_r2_test:.4f}")
+    print(f"Random Forest -> Train RMSE: {rf_rmse_train:.2f}, Test RMSE: {rf_rmse_test:.2f}")
+    print(f"Random Forest -> Train MAE: {rf_mae_train:.2f}, Test MAE: {rf_mae_test:.2f}")
 
-    # Choose the better model based on R² score
-    if rf_r2 > lr_r2:
+    # Choose the better model based on Test R² score
+    if rf_r2_test > lr_r2_test:
         best_model = rf
-        print("Random Forest performed better.")
+        best_model_name = "Random Forest"
+        best_test_r2 = rf_r2_test
+        best_test_rmse = rf_rmse_test
+        best_test_mae = rf_mae_test
     else:
         best_model = lr
-        print("Linear Regression performed better.")
+        best_model_name = "Linear Regression"
+        best_test_r2 = lr_r2_test
+        best_test_rmse = lr_rmse_test
+        best_test_mae = lr_mae_test
+    print(f"\nSelected model: {best_model_name} (Test R²: {best_test_r2:.4f})")
 
     # Ensure the models directory exists
     model_dir = os.path.join(script_dir, '..', '..', 'models')
@@ -67,12 +103,12 @@ def train_and_save_model():
     with open(model_path, 'wb') as f:
         pickle.dump(best_model, f)
 
-    # Save the label encoder
-    encoder_path = os.path.join(model_dir, 'label_encoder.pkl')
-    with open(encoder_path, 'wb') as f:
-        pickle.dump(le, f)
+    # Save the training columns (for one-hot encoding consistency)
+    columns_path = os.path.join(model_dir, 'feature_columns.pkl')
+    with open(columns_path, 'wb') as f:
+        pickle.dump(training_columns, f)
 
-    print("Model and label encoder saved successfully.")
+    print("Model and feature columns saved successfully.")
 
 def predict_price(address, bedrooms, bathrooms, area):
     """
@@ -89,30 +125,38 @@ def predict_price(address, bedrooms, bathrooms, area):
     """
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Load the model and label encoder
+    # Load the model and feature columns
     model_path = os.path.join(script_dir, '..', '..', 'models', 'price_model.pkl')
-    encoder_path = os.path.join(script_dir, '..', '..', 'models', 'label_encoder.pkl')
+    columns_path = os.path.join(script_dir, '..', '..', 'models', 'feature_columns.pkl')
 
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
-    with open(encoder_path, 'rb') as f:
-        le = pickle.load(f)
+    with open(columns_path, 'rb') as f:
+        training_columns = pickle.load(f)
 
-    # Prepare the input data
-    # Encode the address
-    try:
-        address_encoded = le.transform([address])[0]
-    except ValueError:
-        # If the address is not in the label encoder's classes, we might need to handle it
-        # For simplicity, we'll assign a default value or raise an error
-        raise ValueError(f"Address '{address}' not found in training data")
+    # Prepare the input data as a DataFrame with the same columns as training
+    # Start with the numerical features
+    input_data = pd.DataFrame({
+        'NoOfBedrooms': [bedrooms],
+        'NoOfBathrooms': [bathrooms],
+        'AreaSqYards': [area]
+    })
+    # Create a one-hot encoded column for the address (with the prefix 'Address_')
+    address_column = f'Address_{address}'
+    # Add the address column, initialize to 0
+    input_data[address_column] = 1
+    # Ensure all training columns are present, fill missing with 0
+    for col in training_columns:
+        if col not in input_data.columns:
+            input_data[col] = 0
+    # Reorder columns to match training order
+    input_data = input_data[training_columns]
 
-    # Create feature array
-    X_input = np.array([[address_encoded, bedrooms, bathrooms, area]])
-
-    # Make prediction
-    predicted_price = model.predict(X_input)[0]
+    # Make prediction (in log space)
+    predicted_price_log = model.predict(input_data)[0]
+    # Convert back to original price scale
+    predicted_price = np.expm1(predicted_price_log)
 
     return predicted_price
 
