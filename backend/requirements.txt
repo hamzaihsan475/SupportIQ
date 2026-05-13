@@ -8,3 +8,5 @@ numpy
 joblib
 faiss-cpu
 google-generativeai
+jinja2
+python-multipart
