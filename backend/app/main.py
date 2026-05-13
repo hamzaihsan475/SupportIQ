@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base
 from . import models
-from .routes import predictor
+from .routes import predictor, listings
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -26,6 +26,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(predictor.router)
+app.include_router(listings.router)
 
 @app.get("/")
 async def root():
