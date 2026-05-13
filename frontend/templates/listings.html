@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Listings | SupportIQ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Property Listings</h1>
+    <div id="listings-container" class="listings-grid">
+        <!-- Loaded via listings.js -->
+        <p>Loading listings...</p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', path='/js/listings.js') }}"></script>
+{% endblock %}

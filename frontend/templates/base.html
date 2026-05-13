@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SupportIQ{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">SupportIQ</a>
+            <div class="nav-links">
+                <a href="/listings">Listings</a>
+                <a href="/predictor">Predictor</a>
+            </div>
+        </div>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2026 SupportIQ</p>
+    </footer>
+</body>
+</html>
