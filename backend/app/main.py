@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+import pandas as pd
 
 from .database import engine, Base
 from . import models
@@ -12,6 +13,23 @@ from .routes import predictor, listings
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SupportIQ API")
+
+# Cache for location suggestions
+LOCATIONS_CACHE = []
+
+@app.on_event("startup")
+async def load_locations():
+    global LOCATIONS_CACHE
+    try:
+        # Path to Cleaned_Data.csv relative to this file
+        # main.py is in backend/app/, csv is in backend/data/
+        csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'Cleaned_Data.csv')
+        df = pd.read_csv(csv_path)
+        if 'Address' in df.columns:
+            LOCATIONS_CACHE = sorted(df['Address'].dropna().unique().tolist())
+            print(f"Loaded {len(LOCATIONS_CACHE)} locations into cache.")
+    except Exception as e:
+        print(f"Error loading locations cache: {e}")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 frontend_dir = os.path.join(BASE_DIR, "frontend")
@@ -36,6 +54,10 @@ async def get_listings():
         {"address": "DHA Phase 6, Karachi", "price": "Rs. 85,000,000", "bedrooms": 4, "bathrooms": 4, "area": 3600},
         {"address": "Gulshan-e-Iqbal, Karachi", "price": "Rs. 42,000,000", "bedrooms": 3, "bathrooms": 2, "area": 1800},
     ]
+
+@app.get("/api/locations")
+async def get_locations():
+    return LOCATIONS_CACHE
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):

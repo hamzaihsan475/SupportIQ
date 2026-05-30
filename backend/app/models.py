@@ -14,6 +14,7 @@ class Listing(Base):
     bedrooms = Column(Integer)
     bathrooms = Column(Integer)
     status = Column(String, default="available")
+    agency_id = Column(Integer, default=1, nullable=False)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -28,6 +29,7 @@ class Lead(Base):
     name = Column(String)
     budget = Column(Float)
     contact = Column(String)
+    agency_id = Column(Integer, default=1, nullable=False)
 
     created_at = Column(
         DateTime(timezone=True),

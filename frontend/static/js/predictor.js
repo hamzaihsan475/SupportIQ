@@ -1,11 +1,38 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('predict-form');
     const resultDiv = document.getElementById('prediction-result');
+    const addressInput = document.getElementById('address');
+    const locationList = document.getElementById('location-suggestions');
+
+    let verifiedLocations = [];
 
     if (!form || !resultDiv) return;
 
+    // Fetch and populate location suggestions
+    try {
+        const response = await fetch('/api/locations');
+        verifiedLocations = await response.json();
+
+        if (locationList && verifiedLocations.length > 0) {
+            locationList.innerHTML = verifiedLocations
+                .map(loc => `<option value="${loc}">`)
+                .join('');
+        }
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Strict Validation Guard
+        const addressValue = addressInput.value.trim();
+        if (!verifiedLocations.includes(addressValue)) {
+            alert('Please select a valid location from the verified suggestions dropdown.');
+            resultDiv.innerHTML = '';
+            resultDiv.style.background = 'transparent';
+            return;
+        }
 
         const formData = new FormData(form);
         const data = {
@@ -33,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultDiv.innerHTML = `Error: ${result.error}`;
                 resultDiv.style.background = '#ffd2d2';
             } else {
-                resultDiv.innerHTML = `Estimated Price: ${result.predicted_price}`;
+                const formattedPrice = Math.round(result.predicted_price).toLocaleString('en-IN');
+                resultDiv.innerHTML = `Estimated Price: Rs. ${formattedPrice}`;
                 resultDiv.style.background = '#d2ffd2';
             }
         } catch (error) {

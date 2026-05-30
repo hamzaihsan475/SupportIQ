@@ -10,19 +10,44 @@
     <form id="predict-form" class="predictor-form">
         <div class="form-group">
             <label for="address">Address / Area</label>
-            <input type="text" id="address" name="address" required placeholder="e.g. DHA Phase 6">
+            <input type="text" id="address" name="address" list="location-suggestions" required placeholder="e.g. DHA Phase 6">
+            <datalist id="location-suggestions"></datalist>
         </div>
         <div class="form-group">
             <label for="bedrooms">Bedrooms</label>
-            <input type="number" id="bedrooms" name="bedrooms" required min="0">
+            <select id="bedrooms" name="bedrooms" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
         </div>
         <div class="form-group">
             <label for="bathrooms">Bathrooms</label>
-            <input type="number" id="bathrooms" name="bathrooms" required min="0">
+            <select id="bathrooms" name="bathrooms" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
         </div>
         <div class="form-group">
-            <label for="area">Total Area (sq ft)</label>
-            <input type="number" id="area" name="area" required min="0">
+            <label for="area">Total Area (sq yards)</label>
+            <select id="area" name="area" required>
+                <option value="60">60</option>
+                <option value="80">80</option>
+                <option value="100">100</option>
+                <option value="120">120</option>
+                <option value="150">150</option>
+                <option value="200">200</option>
+                <option value="240">240</option>
+                <option value="300">300</option>
+                <option value="400">400</option>
+                <option value="500">500</option>
+            </select>
         </div>
         <button type="submit" class="btn btn-primary">Predict Price</button>
     </form>
