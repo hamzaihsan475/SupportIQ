@@ -7,6 +7,7 @@ pandas
 numpy
 joblib
 faiss-cpu
-google-generativeai
+google-genai
+sentence-transformers
 jinja2
 python-multipart
