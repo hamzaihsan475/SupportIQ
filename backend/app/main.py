@@ -8,7 +8,7 @@ import pandas as pd
 
 from .database import engine, Base
 from . import models
-from .routes import predictor, listings
+from .routes import predictor, listings, chatbot
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,6 +33,7 @@ async def load_locations():
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 frontend_dir = os.path.join(BASE_DIR, "frontend")
+app.include_router(chatbot.router, prefix="/api")
 
 app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(frontend_dir, "templates"))

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SupportIQ{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
 </head>
 <body>
     <nav class="navbar">
@@ -22,5 +23,19 @@
     <footer>
         <p>&copy; 2026 SupportIQ</p>
     </footer>
+
+    <button id="chat-button">💬</button>
+    <div id="chat-window" class="hidden">
+        <div id="chat-header">
+            <span>SupportIQ Assistant</span>
+            <button id="chat-close">&times;</button>
+        </div>
+        <div id="chat-messages"></div>
+        <form id="chat-form">
+            <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+            <button type="submit" id="chat-send">Send</button>
+        </form>
+    </div>
+    <script src="/static/js/chat.js"></script>
 </body>
 </html>
