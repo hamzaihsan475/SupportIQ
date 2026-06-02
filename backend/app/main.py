@@ -8,7 +8,7 @@ import pandas as pd
 
 from .database import engine, Base
 from . import models
-from .routes import predictor, listings
+from .routes import predictor, listings, chatbot
 
 Base.metadata.create_all(bind=engine)
 
@@ -47,6 +47,7 @@ app.add_middleware(
 
 app.include_router(predictor.router)
 app.include_router(listings.router)
+app.include_router(chatbot.router, prefix="/api")
 
 @app.get("/api/listings")
 async def get_listings():
