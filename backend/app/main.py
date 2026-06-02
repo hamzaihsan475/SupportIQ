@@ -8,7 +8,7 @@ import pandas as pd
 
 from .database import engine, Base
 from . import models
-from .routes import predictor, listings, chatbot
+from .routes import predictor, listings, chatbot, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -48,6 +48,7 @@ app.add_middleware(
 
 app.include_router(predictor.router)
 app.include_router(listings.router)
+app.include_router(admin.router, prefix="/api/admin")
 
 @app.get("/api/listings")
 async def get_listings():
@@ -71,3 +72,7 @@ async def listings_page(request: Request):
 @app.get("/predictor", response_class=HTMLResponse)
 async def predictor_page(request: Request):
     return templates.TemplateResponse("predictor.html", {"request": request})
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})

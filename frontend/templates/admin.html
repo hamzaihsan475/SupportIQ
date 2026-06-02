@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - SupportIQ{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+    </header>
+
+    <nav class="admin-tabs">
+        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="listings">Listings</button>
+        <button class="tab-btn" data-tab="leads">Leads</button>
+        <button class="tab-btn" data-tab="conversations">Conversations</button>
+    </nav>
+
+    <div class="tab-content">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-pane active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Listings</h3>
+                    <p id="stat-listings">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Leads</h3>
+                    <p id="stat-leads">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Conversations</h3>
+                    <p id="stat-convs">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Unique Sessions</h3>
+                    <p id="stat-sessions">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Listings Tab -->
+        <div id="listings" class="tab-pane">
+            <div class="table-wrapper">
+                <h2>Property Listings</h2>
+                <table id="listings-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Location</th>
+                            <th>Area</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Beds</th>
+                            <th>Baths</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Leads Tab -->
+        <div id="leads" class="tab-pane">
+            <div class="table-wrapper">
+                <h2>Lead Management</h2>
+                <table id="leads-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Budget</th>
+                            <th>Contact</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Conversations Tab -->
+        <div id="conversations" class="tab-pane">
+            <div class="conv-container">
+                <div class="conv-sidebar">
+                    <h2>Sessions</h2>
+                    <div id="session-list">
+                        <!-- Session IDs injected by JS -->
+                    </div>
+                </div>
+                <div class="conv-main">
+                    <div id="chat-display" class="chat-display">
+                        <div class="chat-placeholder">Select a session to view conversation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+        color: #333;
+    }
+
+    .admin-header {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .admin-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .tab-btn {
+        padding: 10px 20px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+        color: #000;
+        border-bottom: 3px solid #000;
+    }
+
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    /* Dashboard Styles */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .stat-card {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .stat-card h3 {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+    }
+
+    .stat-card p {
+        font-size: 32px;
+        font-weight: bold;
+        color: #000;
+        margin: 0;
+    }
+
+    /* Table Styles */
+    .table-wrapper {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table-wrapper h2 {
+        padding: 15px;
+        margin: 0;
+        background: #f4f4f4;
+        border-bottom: 1px solid #ddd;
+        font-size: 18px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    th, td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+
+    th {
+        background: #fafafa;
+        font-weight: 600;
+        color: #555;
+    }
+
+    tr:hover {
+        background: #fcfcfc;
+    }
+
+    /* Conversations Styles */
+    .conv-container {
+        display: flex;
+        height: 70vh;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .conv-sidebar {
+        width: 300px;
+        border-right: 1px solid #ddd;
+        background: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .conv-sidebar h2 {
+        padding: 15px;
+        font-size: 18px;
+        margin: 0;
+        border-bottom: 1px solid #ddd;
+        background: #eee;
+    }
+
+    #session-list {
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+
+    .session-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        font-size: 13px;
+        color: #666;
+        transition: background 0.2s;
+    }
+
+    .session-item:hover {
+        background: #eef;
+    }
+
+    .session-item.active {
+        background: #ddd;
+        color: #000;
+        font-weight: 600;
+    }
+
+    .conv-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+    }
+
+    .chat-display {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .chat-placeholder {
+        text-align: center;
+        color: #aaa;
+        margin-top: 50px;
+    }
+
+    .msg-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .msg-user {
+        align-self: flex-end;
+        background: #000;
+        color: #fff;
+        border-bottom-right-radius: 2px;
+    }
+
+    .msg-bot {
+        align-self: flex-start;
+        background: #eee;
+        color: #333;
+        border-bottom-left-radius: 2px;
+    }
+</style>
+
+<script src="/static/js/admin.js"></script>
+{% endblock %}
