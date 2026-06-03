@@ -14,6 +14,7 @@
             <div class="nav-links">
                 <a href="/listings">Listings</a>
                 <a href="/predictor">Predictor</a>
+                <a href="/admin">Admin</a>
             </div>
         </div>
     </nav>
@@ -25,6 +26,17 @@
     </footer>
 
     <button id="chat-button">💬</button>
+
+    <div id="chat-lead-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Enter your email to start chatting with SupportIQ AI Assistant</h3>
+            <form id="lead-capture-form">
+                <input type="email" id="lead-email" placeholder="email@example.com" required>
+                <button type="submit" id="lead-submit">Start Chatting</button>
+            </form>
+        </div>
+    </div>
+
     <div id="chat-window" class="hidden">
         <div id="chat-header">
             <span>SupportIQ Assistant</span>

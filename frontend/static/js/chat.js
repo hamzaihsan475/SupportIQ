@@ -9,16 +9,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let sessionId = localStorage.getItem('supportiq_session_id');
     if (!sessionId) {
-        sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
-        localStorage.setItem('supportiq_session_id', sessionId);
+        // We don't generate a random one anymore, we wait for the lead capture
     }
 
     function toggleChat() {
         chatWindow.classList.toggle('hidden');
     }
 
-    chatButton.addEventListener('click', toggleChat);
+    function validateAccess() {
+        const currentSessionId = localStorage.getItem('supportiq_session_id');
+        if (currentSessionId) {
+            toggleChat();
+        } else {
+            document.getElementById('chat-lead-modal').classList.remove('hidden');
+        }
+    }
+
+    chatButton.addEventListener('click', validateAccess);
     closeButton.addEventListener('click', toggleChat);
+
+    const leadModal = document.getElementById('chat-lead-modal');
+    const leadForm = document.getElementById('lead-capture-form');
+
+    leadForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('lead-email').value.trim();
+
+        if (validateEmail(email)) {
+            localStorage.setItem('supportiq_session_id', email);
+            sessionId = email;
+            leadModal.classList.add('hidden');
+            chatMessages.innerHTML = ''; // Clear history as requested
+            toggleChat();
+        } else {
+            alert('Please enter a valid email address.');
+        }
+    });
+
+    function validateEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
 
     function appendMessage(text, sender) {
         const msgDiv = document.createElement('div');

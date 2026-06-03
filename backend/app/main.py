@@ -1,15 +1,22 @@
+import os
+# --- Framework Safety Flags (Bypasses TensorFlow/Protobuf Version Conflicts) ---
+os.environ["STORAGE_OPTIONS"] = ""
+os.environ["FORCE_TF_AVAILABLE"] = "0"
+os.environ["AA_IMPORT_TENSORFLOW"] = "0"
+os.environ["USE_TORCH"] = "1"  # Forces Transformers to run cleanly on PyTorch
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import os
 import pandas as pd
 
 from .database import engine, Base
 from . import models
-from .routes import predictor, listings, chatbot
+from .routes import predictor, listings, chatbot, admin
 
+# Initialize Database Tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SupportIQ API")
@@ -22,7 +29,6 @@ async def load_locations():
     global LOCATIONS_CACHE
     try:
         # Path to Cleaned_Data.csv relative to this file
-        # main.py is in backend/app/, csv is in backend/data/
         csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'Cleaned_Data.csv')
         df = pd.read_csv(csv_path)
         if 'Address' in df.columns:
@@ -31,13 +37,11 @@ async def load_locations():
     except Exception as e:
         print(f"Error loading locations cache: {e}")
 
+# Base Directories and Path Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 frontend_dir = os.path.join(BASE_DIR, "frontend")
-app.include_router(chatbot.router, prefix="/api")
 
-app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static")
-templates = Jinja2Templates(directory=os.path.join(frontend_dir, "templates"))
-
+# Standard CORS Middleware Setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,9 +50,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount Static Files and Jinja2 Templates
+app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(frontend_dir, "templates"))
+
+# --- APIRouters Inclusion ---
+app.include_router(chatbot.router, prefix="/api")
 app.include_router(predictor.router)
 app.include_router(listings.router)
+app.include_router(admin.router, prefix="/api/admin")
 
+# --- Core API Endpoints ---
 @app.get("/api/listings")
 async def get_listings():
     return [
@@ -60,6 +72,7 @@ async def get_listings():
 async def get_locations():
     return LOCATIONS_CACHE
 
+# --- HTML Frontend Page Web Routes ---
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -71,3 +84,7 @@ async def listings_page(request: Request):
 @app.get("/predictor", response_class=HTMLResponse)
 async def predictor_page(request: Request):
     return templates.TemplateResponse("predictor.html", {"request": request})
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})

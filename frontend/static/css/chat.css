@@ -1,4 +1,4 @@
-.chat-hidden {
+.chat-hidden, .hidden {
     display: none !important;
 }
 
@@ -146,4 +146,65 @@
         right: 5%;
         bottom: 80px;
     }
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 30px;
+    border: 2px solid #000;
+    border-radius: 0;
+    width: 400px;
+    max-width: 90%;
+    text-align: center;
+    box-shadow: none;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: #000;
+    font-weight: 600;
+}
+
+#lead-capture-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#lead-email {
+    padding: 10px;
+    border: 1px solid #000;
+    border-radius: 0;
+    outline: none;
+    font-size: 14px;
+}
+
+#lead-submit {
+    padding: 10px;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #000;
+    border-radius: 0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+#lead-submit:hover {
+    background-color: #333;
 }
