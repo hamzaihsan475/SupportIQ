@@ -44,6 +44,7 @@ class Conversation(Base):
     session_id = Column(String, index=True)
     role = Column(String)
     message = Column(String)
+    status = Column(String, default="active")
 
     created_at = Column(
         DateTime(timezone=True),

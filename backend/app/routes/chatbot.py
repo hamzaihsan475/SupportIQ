@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Any
 from pydantic import BaseModel
 
 from backend.app.database import get_db
@@ -12,7 +12,7 @@ router = APIRouter()
 
 # In-memory session store to manage conversation state and temporary lead data
 # Structure: { session_id: { "state": str, "lead_data": dict } }
-SESSION_STORE: Dict[str, Dict[str, Any]] = {}
+SESSION_STORE: dict[str, dict[str, Any]] = {}
 
 class ChatRequest(BaseModel):
     message: str
@@ -27,6 +27,15 @@ class ChatResponse(BaseModel):
 async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     user_msg = request.message
     session_id = request.session_id
+
+    # Check if session is already escalated
+    escalated_session = db.query(Conversation).filter(Conversation.session_id == session_id, Conversation.status == "escalated").first()
+    if escalated_session:
+        # BYPASS AI: Log user message and return a system signal for the frontend
+        user_conv = Conversation(session_id=session_id, role="user", message=user_msg, status="escalated")
+        db.add(user_conv)
+        db.commit()
+        return ChatResponse(response="", intent="escalation", confidence=1.0)
 
     # 1. Initialize or retrieve session state
     if session_id not in SESSION_STORE:
@@ -114,6 +123,22 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             response_text = "I can certainly help you with that! May I please have your full name first?"
         elif intent == "escalation":
             response_text = "Connecting you to a human agent... Please hold."
+
+            # 1. Update all previous conversations for this session to 'escalated'
+            db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "escalated"})
+
+            # 2. Log the current user message as escalated
+            user_conv = Conversation(session_id=session_id, role="user", message=user_msg, status="escalated")
+            db.add(user_conv)
+
+            # 3. Log the bot response as escalated
+            bot_conv = Conversation(session_id=session_id, role="bot", message=response_text, status="escalated")
+            db.add(bot_conv)
+
+            db.commit()
+
+            # 4. Immediate return to prevent fall-through to generic persistence block
+            return ChatResponse(response=response_text, intent=intent, confidence=confidence)
         else:
             # Fallback for any other intents
             response_text = "I'm not sure how to help with that. Could you please rephrase or ask for an agent?"
@@ -130,3 +155,9 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return ChatResponse(response=response_text, intent=intent, confidence=confidence)
+
+@router.get("/history/{session_id}")
+async def get_chat_history(session_id: str, db: Session = Depends(get_db)):
+    """Retrieve all messages for a session, sorted by time."""
+    convs = db.query(Conversation).filter(Conversation.session_id == session_id).order_by(Conversation.created_at.asc()).all()
+    return [{"role": c.role, "message": c.message, "status": c.status} for c in convs]

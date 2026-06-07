@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // We don't generate a random one anymore, we wait for the lead capture
     }
 
+    let pollingInterval = null;
+
     function toggleChat() {
         chatWindow.classList.toggle('hidden');
     }
@@ -88,7 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             typingIndicator.remove();
-            appendMessage(data.response, 'bot');
+
+            if (data.response) {
+                appendMessage(data.response, 'bot');
+            }
+
+            // If the session is escalated, start polling for admin responses
+            if (data.intent === 'escalation') {
+                startPolling();
+            }
         } catch (error) {
             typingIndicator.remove();
             appendMessage('Connection error. Please try again.', 'bot');
@@ -96,6 +106,57 @@ document.addEventListener('DOMContentLoaded', () => {
             chatInput.disabled = false;
             sendButton.disabled = false;
             chatInput.focus();
+        }
+    }
+
+    function startPolling() {
+        // Prevent multiple concurrent polling loops
+        stopPolling();
+
+        pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/history/${sessionId}`);
+                if (!response.ok) throw new Error('History fetch failed');
+                const history = await response.json();
+
+                // Smart Termination: Stop polling if no messages are marked as escalated
+                const isEscalated = history.some(msg => msg.status === 'escalated');
+                if (!isEscalated) {
+                    stopPolling();
+                    return;
+                }
+
+                // Clean Slate: Clear the innerHTML completely before re-rendering
+                chatMessages.innerHTML = '';
+
+                // Loop through the entire history chronologically
+                history.forEach(msg => {
+                    // Explicit Conditional Routing for Roles
+                    let senderRole = 'bot'; // Default to left-side (automated/agent)
+                    if (msg.role === 'user') {
+                        senderRole = 'user'; // Right-side
+                    } else if (['bot', 'system', 'admin'].includes(msg.role)) {
+                        senderRole = 'bot';   // Left-side
+                    }
+
+                    // Only render messages that have content
+                    if (msg.message) {
+                        appendMessage(msg.message, senderRole);
+                    }
+                });
+
+                // UI Anchor: Lock onto the freshest exchange
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 3000);
+    }
+
+    function stopPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
         }
     }
 
@@ -108,4 +169,38 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.value = '';
         sendMessage(message);
     });
+
+    // Initialization: Persist escalation state across reloads
+    if (sessionId) {
+        (async () => {
+            try {
+                const response = await fetch(`/api/chat/history/${sessionId}`);
+                if (!response.ok) return;
+                const history = await response.json();
+
+                const isEscalated = history.some(msg => msg.status === 'escalated');
+                if (isEscalated) {
+                    // Kick off the live sync loop
+                    startPolling();
+
+                    // Immediately render history so user doesn't wait 3 seconds
+                    chatMessages.innerHTML = '';
+                    history.forEach(msg => {
+                        let senderRole = 'bot';
+                        if (msg.role === 'user') {
+                            senderRole = 'user';
+                        } else if (['bot', 'system', 'admin'].includes(msg.role)) {
+                            senderRole = 'bot';
+                        }
+                        if (msg.message) {
+                            appendMessage(msg.message, senderRole);
+                        }
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Init history error:', error);
+            }
+        })();
+    }
 });
