@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboard: false,
         listings: false,
         leads: false,
-        conversations: false
+        conversations: false,
+        escalations: false
     };
 
     async function fetchAndRender(tabId) {
@@ -24,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'conversations':
                 await loadConversations();
+                break;
+            case 'escalations':
+                await loadEscalations();
                 break;
         }
     }
@@ -146,6 +150,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function loadEscalations() {
+        try {
+            const response = await fetch('/api/admin/escalated');
+            if (!response.ok) throw new Error('Escalations fetch failed');
+            const data = await response.json();
+
+            const container = document.getElementById('escalated-container');
+            container.innerHTML = '';
+
+            if (Object.keys(data).length === 0) {
+                container.innerHTML = '<div class="card">No escalated sessions found.</div>';
+                return;
+            }
+
+            Object.entries(data).forEach(([sessionId, messages]) => {
+                const group = document.createElement('div');
+                group.className = 'session-group';
+
+                let messagesHtml = messages.map(m => `
+                    <div class="log-entry">
+                        <span class="role ${m.role}">${m.role}</span>
+                        <span class="text">${m.message}</span>
+                    </div>
+                `).join('');
+
+                group.innerHTML = `
+                    <div class="session-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Session: ${sessionId}</span>
+                        <button class="btn-secondary resolve-btn" data-session="${sessionId}">Mark Resolved</button>
+                    </div>
+                    <div class="session-body">${messagesHtml}</div>
+                `;
+                container.appendChild(group);
+            });
+
+            // Add event listeners to resolve buttons
+            document.querySelectorAll('.resolve-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const sid = e.target.getAttribute('data-session');
+                    await resolveSession(sid);
+                });
+            });
+        } catch (error) {
+            console.error('Escalations error:', error);
+        }
+    }
+
+    async function resolveSession(sessionId) {
+        try {
+            const response = await fetch(`/api/admin/resolve/${sessionId}`, { method: 'POST' });
+            if (!response.ok) throw new Error('Resolve failed');
+            showNotification(`Session ${sessionId} marked as resolved!`);
+            await loadEscalations();
+        } catch (error) {
+            console.error('Resolve error:', error);
+            alert('Failed to resolve session.');
+        }
+    }
+
     addForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(addForm);
@@ -172,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refresh-listings').addEventListener('click', loadListings);
     document.getElementById('refresh-leads').addEventListener('click', loadLeads);
     document.getElementById('refresh-convs').addEventListener('click', loadConversations);
+    document.getElementById('refresh-escalations').addEventListener('click', loadEscalations);
 
     // Initial load for first active tab
     loadDashboard();

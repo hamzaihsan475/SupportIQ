@@ -114,17 +114,23 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             response_text = "I can certainly help you with that! May I please have your full name first?"
         elif intent == "escalation":
             response_text = "Connecting you to a human agent... Please hold."
+            # Update all previous conversations for this session to 'escalated'
+            db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "escalated"})
+            db.commit()
         else:
             # Fallback for any other intents
             response_text = "I'm not sure how to help with that. Could you please rephrase or ask for an agent?"
 
     # 4. Persistence: Log conversation
+    # Determine status for the current messages
+    current_status = "escalated" if intent == "escalation" else "active"
+
     # User message
-    user_conv = Conversation(session_id=session_id, role="user", message=user_msg)
+    user_conv = Conversation(session_id=session_id, role="user", message=user_msg, status=current_status)
     db.add(user_conv)
 
     # Bot response
-    bot_conv = Conversation(session_id=session_id, role="bot", message=response_text)
+    bot_conv = Conversation(session_id=session_id, role="bot", message=response_text, status=current_status)
     db.add(bot_conv)
 
     db.commit()

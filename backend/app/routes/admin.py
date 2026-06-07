@@ -65,6 +65,28 @@ async def get_admin_conversations(db: Session = Depends(get_db)):
 
     return grouped
 
+@router.get("/escalated")
+async def get_escalated_conversations(db: Session = Depends(get_db)):
+    """Retrieve all escalated conversations grouped by session_id."""
+    convs = db.query(Conversation).filter(Conversation.status == "escalated").all()
+
+    grouped = defaultdict(list)
+    for c in convs:
+        grouped[c.session_id].append({
+            "role": c.role,
+            "message": c.message,
+            "created_at": c.created_at
+        })
+
+    return grouped
+
+@router.post("/resolve/{session_id}")
+async def resolve_conversation(session_id: str, db: Session = Depends(get_db)):
+    """Mark all conversations in a session as resolved."""
+    db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "resolved"})
+    db.commit()
+    return {"message": f"Session {session_id} marked as resolved"}
+
 @router.get("/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
     """Compute and return aggregated system metrics."""
