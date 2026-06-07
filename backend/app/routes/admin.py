@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 from collections import defaultdict
 from pydantic import BaseModel
 
@@ -64,6 +63,47 @@ async def get_admin_conversations(db: Session = Depends(get_db)):
         })
 
     return grouped
+
+@router.get("/escalated")
+async def get_escalated_conversations(db: Session = Depends(get_db)):
+    """Retrieve all escalated conversations grouped by session_id."""
+    convs = db.query(Conversation).filter(Conversation.status == "escalated").all()
+
+    grouped = defaultdict(list)
+    for c in convs:
+        grouped[c.session_id].append({
+            "role": c.role,
+            "message": c.message,
+            "created_at": c.created_at
+        })
+
+    return grouped
+
+@router.post("/resolve/{session_id}")
+async def resolve_conversation(session_id: str, db: Session = Depends(get_db)):
+    """Mark all conversations in a session as resolved."""
+    db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "resolved"})
+    db.commit()
+    return {"message": f"Session {session_id} marked as resolved"}
+
+@router.post("/send-message")
+async def send_admin_message(data: dict[str, str], db: Session = Depends(get_db)):
+    """Send a message from admin to user."""
+    session_id = data.get("session_id")
+    message_text = data.get("message_text")
+
+    if not session_id or not message_text:
+        raise HTTPException(status_code=400, detail="session_id and message_text are required")
+
+    admin_conv = Conversation(
+        session_id=session_id,
+        role="bot",
+        message=message_text,
+        status="escalated"
+    )
+    db.add(admin_conv)
+    db.commit()
+    return {"status": "sent", "session_id": session_id}
 
 @router.get("/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):

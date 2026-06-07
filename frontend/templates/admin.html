@@ -11,6 +11,7 @@
         <button class="tab-btn" data-tab="listings">Listings</button>
         <button class="tab-btn" data-tab="leads">Leads</button>
         <button class="tab-btn" data-tab="conversations">Conversations</button>
+        <button class="tab-btn" data-tab="escalations">Escalations</button>
     </div>
 
     <!-- Dashboard Tab -->
@@ -145,6 +146,19 @@
             </div>
             <div id="conv-container">
                 <!-- Grouped conversations load here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Escalations Tab -->
+    <div id="escalations" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2>Escalated Sessions</h2>
+                <button id="refresh-escalations" class="btn-secondary">Refresh</button>
+            </div>
+            <div id="escalated-container">
+                <!-- Escalated conversations load here -->
             </div>
         </div>
     </div>
