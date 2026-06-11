@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let pollingInterval = null;
+    let lastHistoryJson = '';
 
     function toggleChat() {
         chatWindow.classList.toggle('hidden');
@@ -71,6 +72,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return indicatorDiv;
     }
 
+    function renderHistory(history) {
+        chatMessages.innerHTML = '';
+        history.forEach(msg => {
+            let senderRole = 'bot';
+            if (msg.role === 'user') {
+                senderRole = 'user';
+            } else if (['bot', 'system', 'admin'].includes(msg.role)) {
+                senderRole = 'bot';
+            }
+            if (msg.message) {
+                appendMessage(msg.message, senderRole);
+            }
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
     async function sendMessage(message) {
         const typingIndicator = appendTypingIndicator();
         chatInput.disabled = true;
@@ -115,8 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pollingInterval = setInterval(async () => {
             try {
-                const response = await fetch(`/api/history/${sessionId}`);
-                if (!response.ok) throw new Error('History fetch failed');
+                const response = await fetch(`/api/history/${sessionId}`);                if (!response.ok) throw new Error('History fetch failed');
                 const history = await response.json();
 
                 // Smart Termination: Stop polling if no messages are marked as escalated
@@ -126,27 +142,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Clean Slate: Clear the innerHTML completely before re-rendering
-                chatMessages.innerHTML = '';
-
-                // Loop through the entire history chronologically
-                history.forEach(msg => {
-                    // Explicit Conditional Routing for Roles
-                    let senderRole = 'bot'; // Default to left-side (automated/agent)
-                    if (msg.role === 'user') {
-                        senderRole = 'user'; // Right-side
-                    } else if (['bot', 'system', 'admin'].includes(msg.role)) {
-                        senderRole = 'bot';   // Left-side
-                    }
-
-                    // Only render messages that have content
-                    if (msg.message) {
-                        appendMessage(msg.message, senderRole);
-                    }
-                });
-
-                // UI Anchor: Lock onto the freshest exchange
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Stability: Only re-render if history has actually changed to prevent flicker
+                const currentHistoryJson = JSON.stringify(history);
+                if (currentHistoryJson !== lastHistoryJson) {
+                    renderHistory(history);
+                    lastHistoryJson = currentHistoryJson;
+                }
             } catch (error) {
                 console.error('Polling error:', error);
             }
@@ -170,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendMessage(message);
     });
 
-    // Initialization: Persist escalation state across reloads
+    // Initialization: Always load history and persist escalation state across reloads
     if (sessionId) {
         (async () => {
             try {
@@ -178,25 +179,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) return;
                 const history = await response.json();
 
+                // Always render history regardless of status
+                renderHistory(history);
+                lastHistoryJson = JSON.stringify(history);
+
                 const isEscalated = history.some(msg => msg.status === 'escalated');
                 if (isEscalated) {
                     // Kick off the live sync loop
                     startPolling();
-
-                    // Immediately render history so user doesn't wait 3 seconds
-                    chatMessages.innerHTML = '';
-                    history.forEach(msg => {
-                        let senderRole = 'bot';
-                        if (msg.role === 'user') {
-                            senderRole = 'user';
-                        } else if (['bot', 'system', 'admin'].includes(msg.role)) {
-                            senderRole = 'bot';
-                        }
-                        if (msg.message) {
-                            appendMessage(msg.message, senderRole);
-                        }
-                    });
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
             } catch (error) {
                 console.error('Init history error:', error);
