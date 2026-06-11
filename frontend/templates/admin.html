@@ -41,7 +41,7 @@
         <div class="admin-layout-split">
             <div class="column">
                 <div class="card">
-                    <h2>Add New Listing</h2>
+                    <h2 style="color: #1E293B;">Add New Listing</h2>
                     <form id="add-listing-form">
                         <div class="form-group">
                             <label for="title">Title</label>
@@ -96,12 +96,12 @@
             <div class="column">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Existing Listings</h2>
+                        <h2 style="color: #1E293B;">Existing Listings</h2>
                         <button id="refresh-listings" class="btn-secondary">Refresh</button>
                     </div>
                     <table id="listings-table">
                         <thead>
-                            <tr>
+                            <tr style="background: #F8FAFC;">
                                 <th>Title</th>
                                 <th>Location</th>
                                 <th>Price</th>
@@ -120,12 +120,12 @@
     <div id="leads" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2>Captured Leads</h2>
+                <h2 style="color: #1E293B;">Captured Leads</h2>
                 <button id="refresh-leads" class="btn-secondary">Refresh</button>
             </div>
             <table id="leads-table">
-                <thead>
-                    <tr>
+                <thead style="background: #F8FAFC;">
+                    <tr style="background: #F8FAFC;">
                         <th>Name</th>
                         <th>Budget</th>
                         <th>Contact</th>
@@ -141,7 +141,7 @@
     <div id="conversations" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2>Chat Logs</h2>
+                <h2 style="color: #1E293B;">Chat Logs</h2>
                 <button id="refresh-convs" class="btn-secondary">Refresh</button>
             </div>
             <div id="conv-container">
@@ -154,7 +154,7 @@
     <div id="escalations" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2>Escalated Sessions</h2>
+                <h2 style="color: #1E293B;">Escalated Sessions</h2>
                 <button id="refresh-escalations" class="btn-secondary">Refresh</button>
             </div>
             <div id="escalated-container">
@@ -168,6 +168,7 @@
     .admin-title {
         margin-bottom: 30px;
         font-weight: 700;
+        color: #1E293B;
     }
     .admin-tabs {
         display: flex;
@@ -177,16 +178,17 @@
     .tab-btn {
         padding: 12px 24px;
         cursor: pointer;
-        border: 1px solid #ddd;
-        background: #f9f9f9;
+        border: 1px solid #E2E8F0;
+        background: #FFFFFF;
+        color: #64748B;
         font-weight: 600;
         border-radius: 4px;
         transition: all 0.2s;
     }
     .tab-btn.active {
-        background: #000;
-        color: #fff;
-        border-color: #000;
+        background: #1E3A5F;
+        color: #FFFFFF;
+        border-color: #1E3A5F;
     }
     .tab-content {
         display: none;
@@ -202,17 +204,17 @@
         gap: 20px;
     }
     .stat-card {
-        background: #fff;
+        background: #FFFFFF;
         padding: 25px;
-        border: 1px solid #ddd;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
         text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .stat-label {
         display: block;
         font-size: 14px;
-        color: #666;
+        color: #64748B;
         margin-bottom: 10px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -220,7 +222,7 @@
     .stat-value {
         font-size: 32px;
         font-weight: 700;
-        color: #000;
+        color: #1E293B;
     }
 
     /* Layout Split */
@@ -242,16 +244,17 @@
     }
     .form-group input, .form-group select {
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #E2E8F0;
         border-radius: 4px;
         font-size: 14px;
     }
     .card {
-        background: #fff;
+        background: #FFFFFF;
         padding: 20px;
-        border: 1px solid #ddd;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
         height: 100%;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .card-header {
         display: flex;
@@ -269,33 +272,35 @@
     th, td {
         text-align: left;
         padding: 12px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #E2E8F0;
         font-size: 14px;
+        color: #1E293B;
     }
     th {
-        background: #f4f4f4;
+        background: #F8FAFC;
         font-weight: 600;
+        color: #64748B;
     }
 
     /* Conversation Logs */
     .session-group {
         margin-bottom: 30px;
-        border: 1px solid #eee;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
         overflow: hidden;
     }
     .session-header {
-        background: #f8f8f8;
+        background: #F1F5F9;
         padding: 10px 15px;
         font-weight: 600;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #E2E8F0;
         font-size: 13px;
-        color: #555;
+        color: #1E3A5F;
     }
     .log-entry {
         padding: 8px 15px;
         font-size: 13px;
-        border-bottom: 1px solid #fafafa;
+        border-bottom: 1px solid #F8FAFC;
     }
     .log-entry .role {
         font-weight: 700;
@@ -303,36 +308,46 @@
         text-transform: uppercase;
         font-size: 11px;
     }
-    .log-entry .role.user { color: #000; }
-    .log-entry .role.bot { color: #666; }
+    .log-entry .role.user { color: #1E293B; }
+    .log-entry .role.bot { color: #64748B; }
 
     .btn-primary {
-        background: #000;
-        color: #fff;
+        background: #2563EB;
+        color: #FFFFFF;
         padding: 12px 20px;
         border: none;
         cursor: pointer;
         border-radius: 4px;
         font-weight: 600;
         width: 100%;
+        transition: background 0.2s;
+    }
+    .btn-primary:hover {
+        background: #1d4ed8;
     }
     .btn-secondary {
-        background: #f0f0f0;
-        color: #333;
+        background: #F1F5F9;
+        color: #1E3A5F;
         padding: 8px 16px;
-        border: 1px solid #ddd;
+        border: 1px solid #E2E8F0;
         cursor: pointer;
         border-radius: 4px;
         font-size: 13px;
+        transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+        background: #E2E8F0;
+        border-color: #2563EB;
+        color: #2563EB;
     }
     #success-notification {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #d2ffd2;
-        color: #006400;
+        background: #DCFCE7;
+        color: #166534;
         padding: 15px 25px;
-        border: 1px solid #006400;
+        border: 1px solid #BBF7D0;
         border-radius: 4px;
         z-index: 2000;
         font-weight: 600;
