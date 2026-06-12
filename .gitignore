@@ -4,11 +4,6 @@ __pycache__/
 *.pyo
 .env
 venv/
-*.pkl
-
-# Data
-backend/data/
-*.csv
 
 # Node
 node_modules/
@@ -19,3 +14,5 @@ dist/
 Thumbs.db
 
 supportiq.db
+
+*.db
