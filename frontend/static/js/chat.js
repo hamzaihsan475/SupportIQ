@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let pollingInterval = null;
     let lastHistoryJson = '';
+    let lastMessageCount = 0;
 
     function toggleChat() {
         chatWindow.classList.toggle('hidden');
@@ -22,6 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function validateAccess() {
         const currentSessionId = localStorage.getItem('supportiq_session_id');
         if (currentSessionId) {
+            // Remove notification badge when opening chat
+            const badge = document.querySelector('.chat-badge');
+            if (badge) badge.remove();
+
             toggleChat();
         } else {
             document.getElementById('chat-lead-modal').classList.remove('hidden');
@@ -86,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        lastMessageCount = history.length;
     }
 
     async function sendMessage(message) {
@@ -145,6 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Stability: Only re-render if history has actually changed to prevent flicker
                 const currentHistoryJson = JSON.stringify(history);
                 if (currentHistoryJson !== lastHistoryJson) {
+                    // Notification Logic: Check for new incoming messages while hidden
+                    if (history.length > lastMessageCount) {
+                        const lastMsg = history[history.length - 1];
+                        if (lastMsg.role !== 'user' && chatWindow.classList.contains('hidden')) {
+                            if (!document.querySelector('.chat-badge')) {
+                                const badge = document.createElement('div');
+                                badge.className = 'chat-badge';
+                                badge.textContent = '+1';
+                                chatButton.appendChild(badge);
+                            }
+                        }
+                    }
+
                     renderHistory(history);
                     lastHistoryJson = currentHistoryJson;
                 }
@@ -175,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionId) {
         (async () => {
             try {
-                const response = await fetch(`/api/chat/history/${sessionId}`);
+                const response = await fetch(`/api/history/${sessionId}`);
                 if (!response.ok) return;
                 const history = await response.json();
 
