@@ -80,7 +80,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tableBody = document.querySelector('#listings-table tbody');
             tableBody.innerHTML = '';
-            listings.forEach(listing => {
+
+            const activeFilter = document.querySelector('#listings-status-filter .status-filter-btn.active');
+            const filterValue = activeFilter ? activeFilter.getAttribute('data-filter') : 'all';
+
+            const visible = listings.filter(l => {
+                const status = (l.status || 'approved').toLowerCase();
+                if (filterValue === 'all') return true;
+                return status === filterValue;
+            });
+
+            if (visible.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="7" style="text-align:center; color:#64748B; padding:20px;">No listings match this filter.</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
+
+            visible.forEach(listing => {
+                const status = (listing.status || 'approved').toLowerCase();
+                const statusClass = ['pending', 'approved', 'rejected'].includes(status)
+                    ? status
+                    : 'available';
+                const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+                const actionsHtml = status === 'pending'
+                    ? `
+                        <button class="listing-action-btn approve" data-listing-id="${listing.id}">Approve</button>
+                        <button class="listing-action-btn reject" data-listing-id="${listing.id}">Reject</button>
+                    `
+                    : '<span style="color:#64748B; font-size:12px;">—</span>';
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${listing.title || listing.address || 'N/A'}</td>
@@ -88,13 +118,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${listing.price}</td>
                     <td>${listing.property_type || 'N/A'}</td>
                     <td>${listing.bedrooms}/${listing.bathrooms}</td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td>${actionsHtml}</td>
                 `;
                 tableBody.appendChild(row);
+            });
+
+            tableBody.querySelectorAll('.listing-action-btn.approve').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-listing-id');
+                    await moderateListing(id, 'approve');
+                });
+            });
+            tableBody.querySelectorAll('.listing-action-btn.reject').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-listing-id');
+                    await moderateListing(id, 'reject');
+                });
             });
         } catch (error) {
             console.error('Listings error:', error);
         }
     }
+
+    async function moderateListing(listingId, action) {
+        try {
+            const response = await fetch(`/api/admin/listings/${listingId}/${action}`, { method: 'POST' });
+            if (!response.ok) throw new Error(`${action} failed`);
+            showNotification(`Listing ${listingId} ${action}d!`);
+            await loadListings();
+        } catch (error) {
+            console.error(`${action} error:`, error);
+            alert(`Failed to ${action} listing.`);
+        }
+    }
+
+    document.querySelectorAll('#listings-status-filter .status-filter-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            document.querySelectorAll('#listings-status-filter .status-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            await loadListings();
+        });
+    });
 
     async function loadLeads() {
         try {

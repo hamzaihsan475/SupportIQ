@@ -13,8 +13,10 @@ class Listing(Base):
     price = Column(Float)
     bedrooms = Column(Integer)
     bathrooms = Column(Integer)
-    status = Column(String, default="available")
+    status = Column(String, default="approved")
     agency_id = Column(Integer, default=1, nullable=False)
+    submitter_name = Column(String, nullable=True)
+    submitter_contact = Column(String, nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),

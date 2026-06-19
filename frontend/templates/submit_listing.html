@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Post a Listing | SupportIQ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 style="text-align: center; color: #1E3A5F; margin-top: 2rem;">Post a Property Listing</h1>
+    <p style="text-align: center; color: #64748B; margin-bottom: 1rem;">
+        Submit your property details. Our team will review and publish it shortly.
+    </p>
+
+    <form id="submit-listing-form" class="predictor-form">
+        <div class="form-group">
+            <label for="title">Listing Title</label>
+            <input type="text" id="title" name="title" required placeholder="e.g. 5 Bed Bungalow in DHA Phase 6">
+        </div>
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" required placeholder="e.g. DHA Phase 6, Karachi">
+        </div>
+        <div class="form-group">
+            <label for="property_type">Property Type</label>
+            <select id="property_type" name="property_type" required>
+                <option value="House">House</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Plot">Plot</option>
+                <option value="Commercial">Commercial</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="area">Area (sq yards)</label>
+            <input type="number" id="area" name="area" required min="1">
+        </div>
+        <div class="form-group">
+            <label for="price">Price (PKR)</label>
+            <input type="number" id="price" name="price" required min="1">
+        </div>
+        <div class="form-group">
+            <label for="bedrooms">Bedrooms</label>
+            <select id="bedrooms" name="bedrooms" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="bathrooms">Bathrooms</label>
+            <select id="bathrooms" name="bathrooms" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 0.5rem 0;">
+
+        <div class="form-group">
+            <label for="submitter_name">Your Name</label>
+            <input type="text" id="submitter_name" name="submitter_name" required placeholder="Full name">
+        </div>
+        <div class="form-group">
+            <label for="submitter_contact">Contact (Email or Phone)</label>
+            <input type="text" id="submitter_contact" name="submitter_contact" required placeholder="email@example.com or 03XX-XXXXXXX">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Listing</button>
+
+        <div id="submit-result" style="margin-top: 1rem; padding: 1rem; border-radius: 6px; display: none;"></div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('submit-listing-form');
+        const resultBox = document.getElementById('submit-result');
+
+        function showResult(message, isError) {
+            resultBox.style.display = 'block';
+            resultBox.textContent = message;
+            resultBox.style.backgroundColor = isError ? '#FEE2E2' : '#EFF6FF';
+            resultBox.style.color = isError ? '#991B1B' : '#1E3A5F';
+            resultBox.style.borderLeft = isError
+                ? '4px solid #DC2626'
+                : '4px solid #2563EB';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            try {
+                const response = await fetch('/listings/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Submission failed');
+                }
+
+                showResult('Your listing has been submitted for review', false);
+                form.reset();
+            } catch (error) {
+                console.error('Submit error:', error);
+                showResult(error.message || 'Something went wrong. Please try again.', true);
+            }
+        });
+    });
+</script>
+{% endblock %}

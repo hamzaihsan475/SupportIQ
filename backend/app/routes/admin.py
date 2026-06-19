@@ -43,6 +43,28 @@ async def create_listing(listing: ListingCreate, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating listing: {str(e)}")
 
+@router.post("/listings/{listing_id}/approve")
+async def approve_listing(listing_id: int, db: Session = Depends(get_db)):
+    """Approve a user-submitted listing so it becomes publicly visible."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    listing.status = "approved"
+    db.commit()
+    db.refresh(listing)
+    return {"status": "approved", "listing_id": listing_id}
+
+@router.post("/listings/{listing_id}/reject")
+async def reject_listing(listing_id: int, db: Session = Depends(get_db)):
+    """Reject a user-submitted listing. Row is preserved for audit."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    listing.status = "rejected"
+    db.commit()
+    db.refresh(listing)
+    return {"status": "rejected", "listing_id": listing_id}
+
 @router.get("/leads")
 async def get_admin_leads(db: Session = Depends(get_db)):
     """Retrieve all captured user leads for admin view."""
