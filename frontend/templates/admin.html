@@ -99,6 +99,12 @@
                         <h2 style="color: #1E293B;">Existing Listings</h2>
                         <button id="refresh-listings" class="btn-secondary">Refresh</button>
                     </div>
+                    <div class="status-filter" id="listings-status-filter" style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="status-filter-btn active" data-filter="all">All</button>
+                        <button type="button" class="status-filter-btn" data-filter="pending">Pending</button>
+                        <button type="button" class="status-filter-btn" data-filter="approved">Approved</button>
+                        <button type="button" class="status-filter-btn" data-filter="rejected">Rejected</button>
+                    </div>
                     <table id="listings-table">
                         <thead>
                             <tr style="background: #F8FAFC;">
@@ -107,6 +113,8 @@
                                 <th>Price</th>
                                 <th>Type</th>
                                 <th>Rooms</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -352,6 +360,83 @@
         z-index: 2000;
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Listing status filter + badges */
+    .status-filter-btn {
+        padding: 6px 14px;
+        cursor: pointer;
+        border: 1px solid #E2E8F0;
+        background: #FFFFFF;
+        color: #64748B;
+        font-weight: 600;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    .status-filter-btn:hover {
+        border-color: #2563EB;
+        color: #2563EB;
+    }
+    .status-filter-btn.active {
+        background: #1E3A5F;
+        color: #FFFFFF;
+        border-color: #1E3A5F;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-badge.pending {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+    .status-badge.approved {
+        background: #DCFCE7;
+        color: #166534;
+    }
+    .status-badge.rejected {
+        background: #E2E8F0;
+        color: #475569;
+    }
+    .status-badge.available {
+        background: #DBEAFE;
+        color: #1E3A5F;
+    }
+
+    .listing-action-btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        margin-right: 4px;
+        transition: all 0.2s;
+    }
+    .listing-action-btn.approve {
+        background: #2563EB;
+        color: #FFFFFF;
+        border-color: #2563EB;
+    }
+    .listing-action-btn.approve:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+    .listing-action-btn.reject {
+        background: #FFFFFF;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+    .listing-action-btn.reject:hover {
+        color: #991B1B;
+        border-color: #DC2626;
     }
 </style>
 

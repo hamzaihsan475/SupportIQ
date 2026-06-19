@@ -88,3 +88,7 @@ async def predictor_page(request: Request):
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/submit-listing", response_class=HTMLResponse)
+async def submit_listing_page(request: Request):
+    return templates.TemplateResponse("submit_listing.html", {"request": request})
