@@ -99,17 +99,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             visible.forEach(listing => {
                 const status = (listing.status || 'approved').toLowerCase();
-                const statusClass = ['pending', 'approved', 'rejected'].includes(status)
+                const statusClass = ['pending', 'approved', 'rejected', 'deleted'].includes(status)
                     ? status
                     : 'available';
                 const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+                const isSold = !!listing.is_sold;
 
-                const actionsHtml = status === 'pending'
-                    ? `
+                let actionsHtml;
+                if (status === 'pending') {
+                    actionsHtml = `
                         <button class="listing-action-btn approve" data-listing-id="${listing.id}">Approve</button>
                         <button class="listing-action-btn reject" data-listing-id="${listing.id}">Reject</button>
-                    `
-                    : '<span style="color:#64748B; font-size:12px;">—</span>';
+                    `;
+                } else if (status === 'approved') {
+                    const soldBtnClass = isSold ? 'mark-unsold' : 'mark-sold';
+                    const soldBtnLabel = isSold ? 'Mark Unsold' : 'Mark Sold';
+                    actionsHtml = `
+                        <button class="listing-action-btn ${soldBtnClass}" data-listing-id="${listing.id}">${soldBtnLabel}</button>
+                        <button class="listing-action-btn delete" data-listing-id="${listing.id}">Delete</button>
+                    `;
+                } else {
+                    actionsHtml = '<span style="color:#64748B; font-size:12px;">—</span>';
+                }
+
+                const soldBadge = isSold ? ' <span class="status-badge sold">Sold</span>' : '';
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -118,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${listing.price}</td>
                     <td>${listing.property_type || 'N/A'}</td>
                     <td>${listing.bedrooms}/${listing.bathrooms}</td>
-                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span>${soldBadge}</td>
                     <td>${actionsHtml}</td>
                 `;
                 tableBody.appendChild(row);
@@ -136,6 +149,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     await moderateListing(id, 'reject');
                 });
             });
+            tableBody.querySelectorAll('.listing-action-btn.mark-sold, .listing-action-btn.mark-unsold').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-listing-id');
+                    const action = e.target.classList.contains('mark-sold') ? 'mark-sold' : 'mark-unsold';
+                    await moderateListing(id, action);
+                });
+            });
+            tableBody.querySelectorAll('.listing-action-btn.delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-listing-id');
+                    await deleteListing(id);
+                });
+            });
         } catch (error) {
             console.error('Listings error:', error);
         }
@@ -145,11 +171,25 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/admin/listings/${listingId}/${action}`, { method: 'POST' });
             if (!response.ok) throw new Error(`${action} failed`);
-            showNotification(`Listing ${listingId} ${action}d!`);
+            const friendly = action.replace(/-/g, ' ');
+            showNotification(`Listing ${listingId} ${friendly}!`);
             await loadListings();
         } catch (error) {
             console.error(`${action} error:`, error);
             alert(`Failed to ${action} listing.`);
+        }
+    }
+
+    async function deleteListing(listingId) {
+        if (!confirm('Are you sure you want to delete this listing?')) return;
+        try {
+            const response = await fetch(`/api/admin/listings/${listingId}/delete`, { method: 'POST' });
+            if (!response.ok) throw new Error('delete failed');
+            showNotification(`Listing ${listingId} deleted!`);
+            await loadListings();
+        } catch (error) {
+            console.error('delete error:', error);
+            alert('Failed to delete listing.');
         }
     }
 

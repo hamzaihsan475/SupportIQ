@@ -104,6 +104,7 @@
                         <button type="button" class="status-filter-btn" data-filter="pending">Pending</button>
                         <button type="button" class="status-filter-btn" data-filter="approved">Approved</button>
                         <button type="button" class="status-filter-btn" data-filter="rejected">Rejected</button>
+                        <button type="button" class="status-filter-btn" data-filter="deleted">Deleted</button>
                     </div>
                     <table id="listings-table">
                         <thead>
@@ -409,6 +410,14 @@
         background: #DBEAFE;
         color: #1E3A5F;
     }
+    .status-badge.deleted {
+        background: #475569;
+        color: #F8FAFC;
+    }
+    .status-badge.sold {
+        background: #94A3B8;
+        color: #1E293B;
+    }
 
     .listing-action-btn {
         padding: 6px 12px;
@@ -436,6 +445,31 @@
     }
     .listing-action-btn.reject:hover {
         color: #991B1B;
+        border-color: #DC2626;
+    }
+    .listing-action-btn.mark-sold {
+        background: #F1F5F9;
+        color: #1E3A5F;
+        border-color: #1E3A5F;
+    }
+    .listing-action-btn.mark-sold:hover {
+        background: #E2E8F0;
+    }
+    .listing-action-btn.mark-unsold {
+        background: #DBEAFE;
+        color: #1E3A5F;
+        border-color: #2563EB;
+    }
+    .listing-action-btn.mark-unsold:hover {
+        background: #BFDBFE;
+    }
+    .listing-action-btn.delete {
+        background: #FFFFFF;
+        color: #DC2626;
+        border-color: #FCA5A5;
+    }
+    .listing-action-btn.delete:hover {
+        background: #FEE2E2;
         border-color: #DC2626;
     }
 </style>
