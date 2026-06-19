@@ -65,6 +65,39 @@ async def reject_listing(listing_id: int, db: Session = Depends(get_db)):
     db.refresh(listing)
     return {"status": "rejected", "listing_id": listing_id}
 
+@router.post("/listings/{listing_id}/delete")
+async def delete_listing(listing_id: int, db: Session = Depends(get_db)):
+    """Soft-delete a listing by setting status to 'deleted'. Row is preserved."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    listing.status = "deleted"
+    db.commit()
+    db.refresh(listing)
+    return {"status": "deleted", "listing_id": listing_id}
+
+@router.post("/listings/{listing_id}/mark-sold")
+async def mark_listing_sold(listing_id: int, db: Session = Depends(get_db)):
+    """Mark a listing as sold. Row remains visible on the public page with a SOLD badge."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    listing.is_sold = True
+    db.commit()
+    db.refresh(listing)
+    return {"is_sold": True, "listing_id": listing_id}
+
+@router.post("/listings/{listing_id}/mark-unsold")
+async def mark_listing_unsold(listing_id: int, db: Session = Depends(get_db)):
+    """Undo a sold mark on a listing."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    listing.is_sold = False
+    db.commit()
+    db.refresh(listing)
+    return {"is_sold": False, "listing_id": listing_id}
+
 @router.get("/leads")
 async def get_admin_leads(db: Session = Depends(get_db)):
     """Retrieve all captured user leads for admin view."""

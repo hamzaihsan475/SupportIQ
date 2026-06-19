@@ -36,6 +36,7 @@ class ListingUpdate(BaseModel):
 
 class ListingResponse(ListingBase):
     id: int
+    is_sold: bool = False
 
     class Config:
         orm_mode = True
@@ -82,6 +83,8 @@ def read_listings(db: Session = Depends(get_db)):
     # Public view: only show listings that have been approved for publication.
     # Treat legacy "available" rows as approved so existing admin-created rows
     # remain visible after the model default switch.
+    # NOTE: Soft-deleted listings (status="deleted") MUST never appear here —
+    # they are explicitly excluded by the approved/available allow-list below.
     listings = (
         db.query(Listing)
         .filter(Listing.status.in_(["approved", "available"]))

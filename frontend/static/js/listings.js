@@ -29,9 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = '';
         listings.forEach(listing => {
             const card = document.createElement('div');
-            card.className = 'listing-card';
+            card.className = 'listing-card' + (listing.is_sold ? ' listing-card-sold' : '');
+            const soldBadge = listing.is_sold
+                ? ' <span class="listing-sold-badge">SOLD</span>'
+                : '';
             card.innerHTML = `
-                <h3 class="listing-title">${listing.title || listing.address || 'Unnamed Property'}</h3>
+                <h3 class="listing-title">${listing.title || listing.address || 'Unnamed Property'}${soldBadge}</h3>
                 <p><strong class="label">Location:</strong> ${listing.location || listing.address || 'N/A'}</p>
                 <p><strong class="label">Type:</strong> ${listing.property_type || 'N/A'}</p>
                 <p><strong class="label">Area:</strong> ${listing.area || 'N/A'} sq yards</p>
