@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Listing | SupportIQ{% endblock %}
+
+{% block content %}
+<div class="container detail-shell">
+    <a href="/listings" class="detail-back-link">&larr; Back to Listings</a>
+
+    <div id="detail-content">
+        <!-- Initial loading state. JS replaces this on fetch complete. -->
+        <div class="detail-loading">Loading listing...</div>
+    </div>
+</div>
+
+<script>
+    // Embed the listing id into the page so the JS doesn't have to scrape it
+    // from the URL. This is the only piece of state the server contributes.
+    window.__LISTING_ID__ = {{ listing_id | tojson }};
+</script>
+<script src="{{ url_for('static', path='/js/listing_detail.js') }}"></script>
+{% endblock %}

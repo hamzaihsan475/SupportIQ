@@ -307,6 +307,12 @@ footer {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
+.listing-card:focus {
+    outline: none;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
 .listing-card.listing-card-sold {
     border-left: 4px solid #94A3B8;
 }
@@ -337,6 +343,109 @@ footer {
     color: #64748B;
     padding: 3rem 0;
     grid-column: 1 / -1;
+}
+
+/* Listing image carousel */
+.listing-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    margin: -0.5rem -0.5rem 1rem -0.5rem;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #F1F5F9;
+    border: 1px solid #E2E8F0;
+}
+
+.listing-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    /* Click-to-zoom base affordance. The --zoomed modifier below toggles
+       a scale transform; we animate it for a smooth toggle. */
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+    transform-origin: center center;
+    position: relative;
+    z-index: 1;
+}
+
+.listing-image.listing-image--zoomed {
+    cursor: zoom-out;
+    /* transform-based scale: does NOT affect document flow, so the card
+       grid layout stays intact while the image visually enlarges. */
+    transform: scale(1.5);
+    /* Lift above sibling cards so the larger image isn't visually clipped
+       by an adjacent card sitting next to it in the grid. */
+    z-index: 5;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+}
+
+/* When the image is zoomed we must temporarily disable the wrap's
+   overflow:hidden, otherwise the scaled image is clipped back to the
+   original frame and the zoom has no visible effect. The JS toggles
+   this class on the wrap in lockstep with the image's --zoomed class. */
+.listing-image-wrap.listing-image-wrap--zoom-open {
+    overflow: visible;
+}
+
+.listing-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+    font-size: 0.875rem;
+    background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+}
+
+.listing-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background-color: rgba(30, 58, 95, 0.55);
+    color: #FFFFFF;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.listing-carousel-btn:hover {
+    background-color: #2563EB;
+    border-color: #2563EB;
+}
+
+.listing-carousel-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.listing-carousel-btn.prev { left: 8px; }
+.listing-carousel-btn.next { right: 8px; }
+
+.listing-image-counter {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    background-color: rgba(30, 58, 95, 0.65);
+    color: #FFFFFF;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
 }
 
 /* Predictor styles */
@@ -404,4 +513,214 @@ footer {
 .container {
     max-width: 1200px;
     margin: 0 auto;
+}
+
+/* Listing Detail Page */
+.detail-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #2563EB;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    transition: color 0.15s ease;
+}
+
+.detail-back-link:hover {
+    color: #1d4ed8;
+}
+
+.detail-shell {
+    margin-bottom: 4rem;
+}
+
+.detail-gallery {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.detail-gallery .listing-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Detail-page image zoom (inherits cursor + transition from the base
+   .listing-image rule above). Larger scale than the card because the
+   detail image is already big — scale 1.8 still fits within reasonable
+   viewport bounds. */
+.detail-gallery .listing-image.listing-image--zoomed {
+    transform: scale(1.8);
+}
+
+/* Toggle overflow while zoomed on the detail gallery so the scaled image
+   isn't clipped by the gallery's overflow:hidden rule. */
+.detail-gallery.detail-gallery--zoom-open {
+    overflow: visible;
+}
+
+.detail-gallery .listing-image-placeholder {
+    font-size: 1rem;
+}
+
+.detail-gallery-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background-color: rgba(30, 58, 95, 0.55);
+    color: #FFFFFF;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-gallery-btn:hover {
+    background-color: #2563EB;
+    border-color: #2563EB;
+}
+
+.detail-gallery-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.detail-gallery-btn.prev { left: 14px; }
+.detail-gallery-btn.next { right: 14px; }
+
+.detail-gallery-counter {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    background-color: rgba(30, 58, 95, 0.7);
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+}
+
+.detail-title-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.detail-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1E293B;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.detail-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem 2rem;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.detail-info-item .label {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.detail-info-item .value {
+    font-size: 1rem;
+    color: #1E293B;
+    font-weight: 600;
+}
+
+.detail-info-item.price .value {
+    color: #2563EB;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.detail-contact {
+    margin-top: 2rem;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-left: 4px solid #2563EB;
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.detail-contact h2 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1E3A5F;
+}
+
+.detail-contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    margin-top: 0.5rem;
+}
+
+.detail-contact-row .label {
+    font-size: 0.75rem;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    display: block;
+}
+
+.detail-contact-row .value {
+    font-size: 1rem;
+    color: #1E293B;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.detail-error {
+    text-align: center;
+    padding: 4rem 0;
+    color: #64748B;
+}
+
+.detail-error h2 {
+    color: #1E293B;
+    margin-bottom: 0.5rem;
+}
+
+.detail-loading {
+    text-align: center;
+    padding: 4rem 0;
+    color: #64748B;
 }

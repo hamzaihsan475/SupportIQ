@@ -347,24 +347,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        // Send the form as multipart/form-data so the server can receive
+        // the attached image files. FormData sets the correct Content-Type
+        // (with boundary) automatically — do NOT set it manually.
         const formData = new FormData(addForm);
-        const data = Object.fromEntries(formData.entries());
+
+        // Client-side guard: enforce the 5-image cap and 5 MB limit so the
+        // user gets fast feedback. The server re-validates as the source
+        // of truth, but this avoids a wasted round-trip.
+        const MAX_IMAGES = 5;
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+        const files = formData.getAll('images').filter(f => f && f.name);
+        if (files.length > MAX_IMAGES) {
+            alert(`You attached ${files.length} images. Maximum is ${MAX_IMAGES}.`);
+            return;
+        }
+        for (const f of files) {
+            if (f.size > MAX_FILE_SIZE) {
+                const mb = (f.size / (1024 * 1024)).toFixed(2);
+                alert(`"${f.name}" is ${mb} MB — maximum is 5 MB.`);
+                return;
+            }
+            const typeOk = (f.type && ALLOWED.includes(f.type))
+                || /\.(jpe?g|png|webp)$/i.test(f.name);
+            if (!typeOk) {
+                alert(`"${f.name}" is not a supported image type (JPG, PNG, WebP).`);
+                return;
+            }
+        }
 
         try {
             const response = await fetch('/api/admin/listings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: formData
             });
 
-            if (!response.ok) throw new Error('Failed to add listing');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || 'Failed to add listing');
+            }
 
             showNotification('Listing added successfully!');
             addForm.reset();
             await loadListings();
         } catch (error) {
             console.error('Error adding listing:', error);
-            alert('Failed to add listing. Please try again.');
+            alert(error.message || 'Failed to add listing. Please try again.');
         }
     });
 

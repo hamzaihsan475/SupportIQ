@@ -81,6 +81,18 @@ async def root(request: Request):
 async def listings_page(request: Request):
     return templates.TemplateResponse("listings.html", {"request": request})
 
+@app.get("/listings/view/{listing_id}", response_class=HTMLResponse)
+async def listing_detail_page(request: Request, listing_id: int):
+    """Server-renders the detail-page shell. The template's JS fetches the
+    full listing data (including submitter fields) from GET /listings/{id}
+    and renders it client-side. Listing-id is passed in so the template can
+    render the right data even before JS hydrates.
+    """
+    return templates.TemplateResponse(
+        "listing_detail.html",
+        {"request": request, "listing_id": listing_id},
+    )
+
 @app.get("/predictor", response_class=HTMLResponse)
 async def predictor_page(request: Request):
     return templates.TemplateResponse("predictor.html", {"request": request})
