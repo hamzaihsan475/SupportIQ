@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -20,6 +21,28 @@ class Listing(Base):
     submitter_name = Column(String, nullable=True)
     submitter_contact = Column(String, nullable=True)
     is_sold = Column(Boolean, default=False)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
+    # Relationship to images (cascade-delete so removing a listing cleans up its image rows).
+    images = relationship(
+        "ListingImage",
+        backref="listing",
+        cascade="all, delete-orphan",
+    )
+
+
+class ListingImage(Base):
+    __tablename__ = "listing_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id"), nullable=False, index=True)
+    # Path is stored as a URL-accessible string relative to the /static mount
+    # (e.g. "/static/uploads/listings/<uuid>.jpg").
+    image_path = Column(String, nullable=False)
 
     created_at = Column(
         DateTime(timezone=True),

@@ -16,3 +16,8 @@ Thumbs.db
 supportiq.db
 
 *.db
+
+# Uploaded user images (kept out of VCS — preserve the directory structure via a .gitkeep)
+frontend/static/uploads/*
+!frontend/static/uploads/.gitkeep
+!frontend/static/uploads/listings/.gitkeep

@@ -68,6 +68,12 @@
             <input type="text" id="submitter_contact" name="submitter_contact" required placeholder="email@example.com or 03XX-XXXXXXX">
         </div>
 
+        <div class="form-group">
+            <label for="images">Property Images (optional, up to 5)</label>
+            <input type="file" id="images" name="images" multiple accept="image/jpeg,image/png,image/webp">
+            <small id="images-hint" style="color: #64748B; font-size: 0.8rem;">JPG, PNG, or WebP. Max 5 MB per image, 5 images total.</small>
+        </div>
+
         <button type="submit" class="btn btn-primary">Submit Listing</button>
 
         <div id="submit-result" style="margin-top: 1rem; padding: 1rem; border-radius: 6px; display: none;"></div>
@@ -78,6 +84,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('submit-listing-form');
         const resultBox = document.getElementById('submit-result');
+        const imagesInput = document.getElementById('images');
+        const imagesHint = document.getElementById('images-hint');
+
+        const MAX_IMAGES = 5;
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
         function showResult(message, isError) {
             resultBox.style.display = 'block';
@@ -89,15 +101,51 @@
                 : '4px solid #2563EB';
         }
 
+        function validateImagesClient(files) {
+            if (!files || files.length === 0) return null;
+            if (files.length > MAX_IMAGES) {
+                return `You selected ${files.length} images. Maximum is ${MAX_IMAGES}.`;
+            }
+            for (const f of files) {
+                if (f.size > MAX_FILE_SIZE) {
+                    const mb = (f.size / (1024 * 1024)).toFixed(2);
+                    return `"${f.name}" is ${mb} MB — maximum is 5 MB.`;
+                }
+                // Some browsers leave type empty; allow if extension looks ok.
+                const typeOk = (f.type && ALLOWED_TYPES.includes(f.type))
+                    || /\.(jpe?g|png|webp)$/i.test(f.name);
+                if (!typeOk) {
+                    return `"${f.name}" is not a supported image type (JPG, PNG, WebP).`;
+                }
+            }
+            return null;
+        }
+
+        imagesInput.addEventListener('change', () => {
+            const err = validateImagesClient(imagesInput.files);
+            imagesHint.textContent = err
+                ? err
+                : 'JPG, PNG, or WebP. Max 5 MB per image, 5 images total.';
+            imagesHint.style.color = err ? '#DC2626' : '#64748B';
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const data = Object.fromEntries(new FormData(form).entries());
+
+            const clientError = validateImagesClient(imagesInput.files);
+            if (clientError) {
+                showResult(clientError, true);
+                return;
+            }
+
+            // Send as multipart/form-data so the server can accept the files.
+            // FormData sets the right Content-Type (with boundary) automatically.
+            const formData = new FormData(form);
 
             try {
                 const response = await fetch('/listings/submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
 
                 if (!response.ok) {
@@ -107,6 +155,8 @@
 
                 showResult('Your listing has been submitted for review', false);
                 form.reset();
+                imagesHint.textContent = 'JPG, PNG, or WebP. Max 5 MB per image, 5 images total.';
+                imagesHint.style.color = '#64748B';
             } catch (error) {
                 console.error('Submit error:', error);
                 showResult(error.message || 'Something went wrong. Please try again.', true);
