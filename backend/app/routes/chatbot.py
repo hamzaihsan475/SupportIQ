@@ -63,6 +63,65 @@ RE_ESTATE_KEYWORDS: set[str] = {
 WORD_COUNT_CUTOFF: int = 3
 
 
+# Lead-field filler-word list. Vocabulary sourced directly from the words
+# already enumerated in is_casual_chitchat()'s docstring and the pre-classifier
+# guard's design comment above (the same "wait / hi / hello / ok / okay / ya /
+# yeah / hmm / lol / thanks / bye / bro / kese" set the prior session used to
+# define casual chitchat). We reuse that vocabulary here rather than building
+# a brand-new list, because the same class of inputs (single-word greetings
+# and fillers typed mid-funnel) is exactly what gets silently mis-accepted as
+# a name, budget, or contact.
+#
+# Roman Urdu additions: a live test surfaced "ruko" (Urdu for "wait") being
+# silently accepted as a contact value, because the prior list was English-
+# only and the contact field had no validation. The Roman Urdu bare single-
+# word fillers below were sourced from the chitchat class in
+# backend/data/intent_dataset.csv (already reviewed and approved as
+# authentic Karachi-style chitchat) plus the canonical words the task
+# description explicitly named. Multi-word fillers ("salam bhai", "acha
+# theek hai", "ok done bhai") are filtered out by the single-token check
+# in _is_single_filler_word() below — only bare single words need to be in
+# this set.
+LEAD_FILLER_WORDS: set[str] = {
+    # English fillers / acknowledgements / greetings
+    "wait", "hi", "hello", "hey", "ok", "okay", "okk", "ya", "yeah",
+    "yep", "yup", "yess", "hmm", "hm", "lol", "lmao", "haha", "thanks",
+    "thank", "thx", "ty", "thnx", "thanx", "bye", "bro", "bruh",
+    "w8", "huh", "eh", "hehe", "ha", "wow", "omg", "nice", "cool",
+    "great", "good", "awesome", "amazing", "perfect", "alright", "sure",
+    "no", "nope", "nah", "yes", "morning", "afternoon", "evening",
+    "night", "gm", "gn", "kese", "kaise", "kaisy", "kaisay",
+    # Roman Urdu bare fillers / greetings / acknowledgements (single-word only;
+    # multi-word variants like "salam bhai" / "haan yaar" fall through as
+    # they are not single-token after the \b\w+\b split).
+    "ruko", "acha", "theek", "thik", "thk", "haan", "han", "nahi",
+    "nahin", "nhi", "ni", "sahi", "shukriya", "shukria", "salam",
+    "salaam", "aoa", "adaab", "walaikum", "meherbani", "mehrbani",
+    "jazak", "jazakallah", "khuda", "phir", "chal", "subah", "bakhair",
+    "bas", "kuch", "sab", "sb", "mast", "mst", "alhamdulillah",
+    "alhamdullilah", "fi", "kyun", "kyu", "kya", "yaar", "bhai",
+    "baji", "bajiya",
+}
+
+
+def _is_single_filler_word(message: str) -> bool:
+    """
+    Returns True if `message` is exactly one word AND that word is in
+    LEAD_FILLER_WORDS (after stripping punctuation/whitespace and
+    lowercasing). Multi-word inputs and anything not in the set return False.
+    Used only inside the collecting_lead branch to reject filler words typed
+    in response to a name, budget, or contact prompt.
+    """
+    if not isinstance(message, str):
+        return False
+    # \b\w+\b strips surrounding punctuation/quotes so "wait??" and "hi."
+    # still match their base words.
+    words = re.findall(r"\b\w+\b", message.lower().strip())
+    if len(words) != 1:
+        return False
+    return words[0] in LEAD_FILLER_WORDS
+
+
 def is_casual_chitchat(message: str) -> bool:
     """
     Pre-classifier guard. Returns True for inputs that are clearly casual
@@ -304,6 +363,57 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             )
 
         if missing_field:
+            # LEAD-FIELD FILLER VALIDATION (name + budget + contact).
+            # The classifier is comfortable mis-routing single-word greetings
+            # as lead_capture, and the numeric/currency/contact short-circuit
+            # above only catches inputs that look like the *next* field —
+            # it does nothing for bare filler words typed into the name,
+            # budget, or contact slot. Without this check, "wait" silently
+            # becomes the user's name, "hi" silently becomes their budget,
+            # and Roman Urdu fillers like "ruko" silently become the contact
+            # value. We reject only single-word filler matches against
+            # LEAD_FILLER_WORDS (the same vocabulary already enumerated by
+            # the pre-classifier is_casual_chitchat() guard above, plus the
+            # Roman Urdu fillers sourced from the intent_dataset.csv chitchat
+            # class) — multi-word inputs, real names, real numeric/currency
+            # budgets, and contact-shaped input (phones / emails) all pass
+            # through unchanged. Phones/emails are inherently multi-token
+            # under the \b\w+\b split used by _is_single_filler_word, so
+            # there is no overlap with the existing contact-shape
+            # short-circuit above.
+            if missing_field in ("name", "budget", "contact") and _is_single_filler_word(user_msg):
+                if missing_field == "name":
+                    response_text = (
+                        "Sorry, I didn't quite catch that — could you tell "
+                        "me your full name?"
+                    )
+                elif missing_field == "budget":
+                    response_text = (
+                        "Sorry, could you share your budget so I can help "
+                        "find the right options?"
+                    )
+                else:  # missing_field == "contact"
+                    response_text = (
+                        "Sorry, could you share a valid contact number or "
+                        "email so an agent can reach you?"
+                    )
+
+                # Mirror ESCAPE HATCH 2's persistence pattern: log both
+                # turns so the admin conversation log reflects what the
+                # user typed, but do NOT change session state, do NOT
+                # advance the missing field, and do NOT save to lead_data.
+                user_conv = Conversation(session_id=session_id, role="user", message=user_msg)
+                db.add(user_conv)
+                bot_conv = Conversation(session_id=session_id, role="bot", message=response_text)
+                db.add(bot_conv)
+                db.commit()
+
+                return ChatResponse(
+                    response=response_text,
+                    intent="lead_capture",
+                    confidence=1.0,
+                )
+
             # Save current message to the missing field
             lead_data[missing_field] = user_msg
 
