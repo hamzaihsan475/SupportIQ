@@ -369,6 +369,13 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
 
             if intent in ["faq", "uncertain"]:
                 response_text = get_rag_response(user_msg)
+            elif intent == "chitchat":
+                # Safety-net for casual / non-real-estate messages that slipped
+                # past the pre-classifier is_casual_chitchat() guard (e.g.
+                # longer casual messages that exceed the WORD_COUNT_CUTOFF).
+                # Same routing as the guard: friendly Gemini response, no
+                # escalation, no lead capture, no RAG, no session-state change.
+                response_text = _chitchat_via_gemini(user_msg)
             elif intent == "lead_capture":
                 session["state"] = "collecting_lead"
                 response_text = "I can certainly help you with that! May I please have your full name first?"
