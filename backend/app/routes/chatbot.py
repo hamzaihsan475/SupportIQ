@@ -15,6 +15,118 @@ router = APIRouter()
 # Structure: { session_id: { "state": str, "lead_data": dict } }
 SESSION_STORE: dict[str, dict[str, Any]] = {}
 
+# ---------------------------------------------------------------------------
+# Pre-classifier casual-chitchat guard
+# ---------------------------------------------------------------------------
+# The trained intent classifier (backend/models/classifier.pkl) was fit on
+# 2,100 long templated real-estate sentences and has ZERO examples of
+# greetings, small talk, or Roman Urdu. As a result, casual inputs like
+# "broo?", "lol", "hmm", "wait??", "kese ho?" get confidently WRONG
+# predictions (e.g. lead_capture @ 0.87, escalation @ 0.61), and the 0.40
+# confidence threshold does NOT catch them because the wrong class still
+# scores high. This guard short-circuits such inputs to a friendly Gemini
+# response BEFORE predict_intent() runs.
+#
+# Keyword list sourced from token-frequency analysis of the actual
+# 2,100-row training set (backend/data/intent_dataset.csv) and the FAQ
+# knowledge base already used in backend/app/ml/rag.py — every word here
+# appears at least once in one of those two sources.
+RE_ESTATE_KEYWORDS: set[str] = {
+    # Locations (from intent_dataset.csv top-frequency + rag.py KNOWLEDGE_BASE)
+    "dha", "bahria", "gulberg", "johar", "clifton", "gulshan", "emaar",
+    "giga", "mall", "blue", "area", "phase", "sector",
+    # Property / unit terms
+    "plot", "house", "apartment", "flat", "villa", "shop", "file",
+    "marla", "kanal", "bhk", "penthouse", "studio", "commercial",
+    "residential", "property", "properties", "listing", "listings",
+    # Action / intent terms
+    "buy", "sell", "rent", "lease", "invest", "booking", "book",
+    "available", "sale", "buying", "selling",
+    # Money / pricing
+    "price", "prices", "pricing", "budget", "rate", "rates", "lakh",
+    "lakhs", "crore", "crores", "pkr", "rs", "rupee", "rupees",
+    "installment", "downpayment", "token", "money", "fee", "fees",
+    "transfer", "registry", "possession", "charges", "tax", "cgt",
+    "stamp", "duty",
+    # People / process
+    "agent", "admin", "human", "owner", "broker", "contact",
+    "escalate", "escalation", "complaint", "manager",
+}
+
+# Word-count cutoff for the chitchat guard. <=3 chosen because the 2,100-row
+# training set has ZERO examples with <=3 words (verified by direct scan of
+# intent_dataset.csv — the shortest message is 6 words), so this cutoff
+# cannot swallow a legitimate classifier input. Every confirmed-broken
+# casual input ("broo?", "lol", "hmm", "wait??", "kese ho?", "hi", "ok",
+# "thanks") is 1 word; every must-NOT-be-rerouted input from the test set
+# is >=6 words.
+WORD_COUNT_CUTOFF: int = 3
+
+
+def is_casual_chitchat(message: str) -> bool:
+    """
+    Pre-classifier guard. Returns True for inputs that are clearly casual
+    small-talk (greetings, Roman Urdu, filler like "broo?/lol/hmm/ok/hi/
+    thanks") rather than a real-estate question.
+
+    Rule: word_count <= WORD_COUNT_CUTOFF AND no real-estate keyword
+    appears in the (lowercased) message.
+
+    Only safe to call in the idle/default chat path. The collecting_lead
+    branch has its own short-circuit logic (numeric/currency/contact +
+    HATCH 1 / HATCH 2) and is intentionally NOT routed through this guard.
+    """
+    if not isinstance(message, str):
+        return False
+    msg_lower = message.lower()
+    words = re.findall(r"\b\w+\b", msg_lower)
+    if len(words) > WORD_COUNT_CUTOFF:
+        return False
+    if not words:  # empty / punctuation-only — treat as chitchat
+        return True
+    return not any(kw in msg_lower for kw in RE_ESTATE_KEYWORDS)
+
+
+def _chitchat_via_gemini(user_msg: str) -> str:
+    """
+    Direct Gemini call for casual chitchat. Reuses the module-level Gemini
+    client from backend.app.ml.rag (same singleton — no second client).
+    Deliberately does NOT invoke the FAISS / RAG pipeline, because these
+    messages are unrelated to the property FAQ knowledge base.
+    """
+    # Lazy import to avoid forcing backend.app.ml.rag initialization
+    # (which loads the embedding model and FAISS index) on every chitchat
+    # call when it's already loaded once at startup.
+    from backend.app.ml.rag import client, types
+
+    try:
+        system_prompt = (
+            "You are SupportIQ, a friendly Karachi real-estate assistant. "
+            "The user just sent a casual / non-real-estate message. "
+            "Reply briefly (1-2 sentences), warmly, and gently steer the "
+            "conversation back to how you can help with property questions "
+            "in Karachi (buying, selling, renting, listings, prices, DHA, "
+            "Bahria Town, Clifton, Gulshan-e-Iqbal, etc.). Do not pretend "
+            "to know about non-property topics — keep redirecting to real "
+            "estate."
+        )
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=user_msg,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.4,  # warmer than the FAQ path (0.0) for chitchat
+            ),
+        )
+        return response.text
+    except Exception:
+        # Mirror get_rag_response()'s error-fallback style so a Gemini
+        # outage does not take down the chat route.
+        return (
+            "Hey there! I'm here to help with Karachi real-estate questions "
+            "(buy/sell/rent, DHA, Bahria Town, prices, etc.). What are you looking for?"
+        )
+
 class ChatRequest(BaseModel):
     message: str
     session_id: str
@@ -240,36 +352,47 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
 
     # 3. Standard Logic (Idle State)
     else:
-        prediction = predict_intent(user_msg)
-        intent = prediction["intent"]
-        confidence = prediction["confidence"]
-
-        if intent in ["faq", "uncertain"]:
-            response_text = get_rag_response(user_msg)
-        elif intent == "lead_capture":
-            session["state"] = "collecting_lead"
-            response_text = "I can certainly help you with that! May I please have your full name first?"
-        elif intent == "escalation":
-            response_text = "Connecting you to a human agent... Please hold."
-
-            # 1. Update all previous conversations for this session to 'escalated'
-            db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "escalated"})
-
-            # 2. Log the current user message as escalated
-            user_conv = Conversation(session_id=session_id, role="user", message=user_msg, status="escalated")
-            db.add(user_conv)
-
-            # 3. Log the bot response as escalated
-            bot_conv = Conversation(session_id=session_id, role="bot", message=response_text, status="escalated")
-            db.add(bot_conv)
-
-            db.commit()
-
-            # 4. Immediate return to prevent fall-through to generic persistence block
-            return ChatResponse(response=response_text, intent=intent, confidence=confidence)
+        # PRE-CLASSIFIER GUARD: catch casual chitchat (greetings, Roman
+        # Urdu, filler like "broo?"/"lol"/"hmm"/"wait??"/"kese ho?") that
+        # the trained classifier confidently misroutes as lead_capture /
+        # escalation. We only apply this in the idle state — mid-lead-
+        # capture has its own short-circuit logic (HATCH 1 / HATCH 2 +
+        # numeric/currency/contact) above that we must not interfere with.
+        if is_casual_chitchat(user_msg):
+            response_text = _chitchat_via_gemini(user_msg)
+            intent = "chitchat"
+            confidence = 1.0
         else:
-            # Fallback for any other intents
-            response_text = "I'm not sure how to help with that. Could you please rephrase or ask for an agent?"
+            prediction = predict_intent(user_msg)
+            intent = prediction["intent"]
+            confidence = prediction["confidence"]
+
+            if intent in ["faq", "uncertain"]:
+                response_text = get_rag_response(user_msg)
+            elif intent == "lead_capture":
+                session["state"] = "collecting_lead"
+                response_text = "I can certainly help you with that! May I please have your full name first?"
+            elif intent == "escalation":
+                response_text = "Connecting you to a human agent... Please hold."
+
+                # 1. Update all previous conversations for this session to 'escalated'
+                db.query(Conversation).filter(Conversation.session_id == session_id).update({"status": "escalated"})
+
+                # 2. Log the current user message as escalated
+                user_conv = Conversation(session_id=session_id, role="user", message=user_msg, status="escalated")
+                db.add(user_conv)
+
+                # 3. Log the bot response as escalated
+                bot_conv = Conversation(session_id=session_id, role="bot", message=response_text, status="escalated")
+                db.add(bot_conv)
+
+                db.commit()
+
+                # 4. Immediate return to prevent fall-through to generic persistence block
+                return ChatResponse(response=response_text, intent=intent, confidence=confidence)
+            else:
+                # Fallback for any other intents
+                response_text = "I'm not sure how to help with that. Could you please rephrase or ask for an agent?"
 
     # 4. Persistence: Log conversation
     # User message
