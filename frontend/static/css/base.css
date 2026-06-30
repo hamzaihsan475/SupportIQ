@@ -190,38 +190,49 @@ main {
 
 .feature-card {
     border: 1px solid #E2E8F0;
-    border-left: 4px solid #2563EB;
-    padding: 2.5rem 2rem;
+    border-left: 3px solid #2563EB;
+    padding: 3rem 2.5rem;
     background-color: #FFFFFF;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
 }
 
 .feature-card:hover {
     transform: translateY(-4px);
-    border-color: #2563EB;
+    border-left-color: #1E3A5F;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.feature-icon {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
+.feature-index {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #2563EB;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #E2E8F0;
+    width: 100%;
 }
 
 .feature-card h3 {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
-    color: #1E293B;
+    margin-bottom: 0.875rem;
+    color: #1E3A5F;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
 }
 
 .feature-card p {
     font-size: 0.9375rem;
     color: #64748B;
     margin: 0;
+    line-height: 1.6;
 }
 
 /* Chat Widget Overrides */
