@@ -1,3 +1,17 @@
+// Module-level HTML escape helper. Copied verbatim from frontend/static/js/listings.js
+// (and identical to the one in listing_detail.js). Used at every site where
+// user-supplied data is inserted into the DOM via innerHTML to prevent stored
+// XSS — security audit fix #2.
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
@@ -126,10 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${listing.title || listing.address || 'N/A'}</td>
-                    <td>${listing.location || 'N/A'}</td>
+                    <td>${escapeHtml(listing.title || listing.address || 'N/A')}</td>
+                    <td>${escapeHtml(listing.location || 'N/A')}</td>
                     <td>${listing.price}</td>
-                    <td>${listing.property_type || 'N/A'}</td>
+                    <td>${escapeHtml(listing.property_type || 'N/A')}</td>
                     <td>${listing.bedrooms}/${listing.bathrooms}</td>
                     <td><span class="status-badge ${statusClass}">${statusLabel}</span>${soldBadge}</td>
                     <td>${actionsHtml}</td>
@@ -212,10 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
             leads.forEach(lead => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${lead.name || 'N/A'}</td>
-                    <td>${lead.budget || 'N/A'}</td>
-                    <td>${lead.contact || 'N/A'}</td>
-                    <td>${lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A'}</td>
+                    <td>${escapeHtml(lead.name || 'N/A')}</td>
+                    <td>${escapeHtml(lead.budget || 'N/A')}</td>
+                    <td>${escapeHtml(lead.contact || 'N/A')}</td>
+                    <td>${lead.created_at ? escapeHtml(new Date(lead.created_at).toLocaleDateString()) : 'N/A'}</td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -240,12 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 let messagesHtml = messages.map(m => `
                     <div class="log-entry">
                         <span class="role ${m.role}">${m.role}</span>
-                        <span class="text">${m.message}</span>
+                        <span class="text">${escapeHtml(m.message)}</span>
                     </div>
                 `).join('');
 
                 group.innerHTML = `
-                    <div class="session-header">Session: ${sessionId}</div>
+                    <div class="session-header">Session: ${escapeHtml(sessionId)}</div>
                     <div class="session-body">${messagesHtml}</div>
                 `;
                 container.appendChild(group);
@@ -276,19 +290,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 let messagesHtml = messages.map(m => `
                     <div class="log-entry">
                         <span class="role ${m.role}">${m.role}</span>
-                        <span class="text">${m.message}</span>
+                        <span class="text">${escapeHtml(m.message)}</span>
                     </div>
                 `).join('');
 
                 group.innerHTML = `
                     <div class="session-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Session: ${sessionId}</span>
-                        <button class="btn-secondary resolve-btn" data-session="${sessionId}">Mark Resolved</button>
+                        <span>Session: ${escapeHtml(sessionId)}</span>
+                        <button class="btn-secondary resolve-btn" data-session="${escapeHtml(sessionId)}">Mark Resolved</button>
                     </div>
                     <div class="session-body">${messagesHtml}</div>
                     <div class="session-reply" style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-                        <input type="text" class="reply-input" data-session="${sessionId}" placeholder="Type a reply..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <button class="btn-primary send-reply-btn" data-session="${sessionId}" style="width: auto; padding: 8px 16px;">Send Reply</button>
+                        <input type="text" class="reply-input" data-session="${escapeHtml(sessionId)}" placeholder="Type a reply..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn-primary send-reply-btn" data-session="${escapeHtml(sessionId)}" style="width: auto; padding: 8px 16px;">Send Reply</button>
                     </div>
                 `;
                 container.appendChild(group);
