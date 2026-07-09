@@ -3,11 +3,18 @@ from sqlalchemy.orm import Session
 from collections import defaultdict
 from typing import List
 
+from backend.app.auth import verify_admin_credentials
 from backend.app.database import get_db
 from backend.app.models import Listing, ListingImage, Lead, Conversation
 from backend.app.image_uploads import save_listing_images
 
-router = APIRouter(tags=["admin"])
+# Every route registered on this router requires HTTP Basic Auth — see
+# backend/app/auth.py. Applied at the router level so individual route
+# handlers stay focused on business logic.
+router = APIRouter(
+    tags=["admin"],
+    dependencies=[Depends(verify_admin_credentials)],
+)
 
 
 def _listing_to_dict(listing: Listing) -> dict:

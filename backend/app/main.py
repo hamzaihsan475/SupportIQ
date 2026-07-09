@@ -5,13 +5,14 @@ os.environ["FORCE_TF_AVAILABLE"] = "0"
 os.environ["AA_IMPORT_TENSORFLOW"] = "0"
 os.environ["USE_TORCH"] = "1"  # Forces Transformers to run cleanly on PyTorch
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
 
+from .auth import verify_admin_credentials
 from .database import engine, Base
 from . import models
 from .routes import predictor, listings, chatbot, admin
@@ -98,7 +99,7 @@ async def predictor_page(request: Request):
     return templates.TemplateResponse("predictor.html", {"request": request})
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request):
+async def admin_page(request: Request, _=Depends(verify_admin_credentials)):
     return templates.TemplateResponse("admin.html", {"request": request})
 
 @app.get("/submit-listing", response_class=HTMLResponse)
