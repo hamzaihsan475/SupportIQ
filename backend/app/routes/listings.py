@@ -26,16 +26,6 @@ class ListingBase(BaseModel):
 class ListingCreate(ListingBase):
     pass
 
-class ListingUpdate(BaseModel):
-    title: Optional[str] = None
-    location: Optional[str] = None
-    area: Optional[float] = None
-    property_type: Optional[str] = None
-    price: Optional[float] = None
-    bedrooms: Optional[int] = None
-    bathrooms: Optional[int] = None
-    status: Optional[str] = None
-
 class ListingResponse(ListingBase):
     id: int
     is_sold: bool = False
@@ -181,29 +171,3 @@ def read_listing(id: int, db: Session = Depends(get_db)):
     if not db_listing:
         raise HTTPException(status_code=404, detail="Listing not found")
     return _listing_detail_to_dict(db_listing)
-
-
-@router.put("/{id}", response_model=ListingResponse)
-def update_listing(id: int, listing_update: ListingUpdate, db: Session = Depends(get_db)):
-    db_listing = db.query(Listing).filter(Listing.id == id).first()
-    if not db_listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
-
-    update_data = listing_update.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_listing, key, value)
-
-    db.commit()
-    db.refresh(db_listing)
-    return _listing_to_dict(db_listing)
-
-
-@router.delete("/{id}")
-def delete_listing(id: int, db: Session = Depends(get_db)):
-    db_listing = db.query(Listing).filter(Listing.id == id).first()
-    if not db_listing:
-        raise HTTPException(status_code=404, detail="Listing not found")
-
-    db.delete(db_listing)
-    db.commit()
-    return {"detail": "Listing deleted successfully"}
