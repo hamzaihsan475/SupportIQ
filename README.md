@@ -233,8 +233,14 @@ pip install -r backend/requirements.txt
 Create `backend/.env` (this file is gitignored):
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# --- Admin HTTP Basic Auth (security audit fix #1) ---
+# Both values are read on every request, so rotation does not require a restart.
+# Replace the demo password below with a strong secret in real deployments.
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-me-to-a-strong-password
 ```
-Without a key, `rag.py` will print a warning and any RAG request will return a graceful error string.
+Without a Gemini key, `rag.py` will print a warning and any RAG request will return a graceful error string. Without `ADMIN_USERNAME` / `ADMIN_PASSWORD`, **all** `/admin*` routes (page + API) refuse access with HTTP 401.
 
 ### 6. Verify Local Data Assets
 The repo already ships with:
