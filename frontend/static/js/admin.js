@@ -12,6 +12,12 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+// Module-level handle for the escalations tab polling interval. Tracked
+// here (outside the DOMContentLoaded closure) so the tab click handler
+// can clearInterval() it when navigating away and re-create it on
+// return. See startEscalationPolling / stopEscalationPolling below.
+let escalationPollInterval = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
@@ -59,9 +65,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (c.id === target) c.classList.add('active');
             });
 
-            await fetchAndRender(target);
+            // Polling management: stop on any non-escalations tab so we
+            // don't keep hitting /api/admin/escalated in the background.
+            // startEscalationPolling() handles both the immediate fetch
+            // and the setInterval schedule (5000ms tick). For the
+            // escalations tab we skip fetchAndRender() below since
+            // startEscalationPolling() already kicked off the load —
+            // calling both would fire two back-to-back requests.
+            if (target === 'escalations') {
+                startEscalationPolling();
+            } else {
+                stopEscalationPolling();
+                await fetchAndRender(target);
+            }
         });
     });
+
+    // Starts (or restarts) the escalations polling cycle. Fires an
+    // immediate fetch so the panel is populated without waiting for the
+    // first tick, then schedules a refresh every 5s. Safe to call when
+    // an interval is already running — the prior interval is cleared
+    // first to avoid duplicate timers if the user clicks the tab twice.
+    function startEscalationPolling() {
+        stopEscalationPolling();
+        loadEscalations();
+        escalationPollInterval = setInterval(loadEscalations, 5000);
+    }
+
+    // No-op if no interval is active, so it's safe to call from any
+    // tab click without first checking the current state.
+    function stopEscalationPolling() {
+        if (escalationPollInterval !== null) {
+            clearInterval(escalationPollInterval);
+            escalationPollInterval = null;
+        }
+    }
 
     function showNotification(message) {
         const notification = document.createElement('div');
@@ -276,55 +314,180 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             const container = document.getElementById('escalated-container');
-            container.innerHTML = '';
 
+            // Empty-state short-circuit: no escalations, no DOM to merge
+            // against — just render the placeholder.
             if (Object.keys(data).length === 0) {
                 container.innerHTML = '<div class="card">No escalated sessions found.</div>';
                 return;
             }
 
-            Object.entries(data).forEach(([sessionId, messages]) => {
-                const group = document.createElement('div');
-                group.className = 'session-group';
+            // Determine whether a full rebuild is required. We rebuild
+            // when the panel is empty or shows the placeholder card; for
+            // every other tick we do a surgical update of the message
+            // body for each existing session group. The session-reply
+            // block (the input + send button) is never touched during
+            // the surgical path, so an admin mid-typing a reply keeps
+            // their text, focus, and caret position.
+            const existingGroups = container.querySelectorAll('.session-group');
+            const needsFullRebuild = existingGroups.length === 0
+                || container.querySelector('.card') !== null;
 
-                let messagesHtml = messages.map(m => `
-                    <div class="log-entry">
-                        <span class="role ${m.role}">${m.role}</span>
-                        <span class="text">${escapeHtml(m.message)}</span>
-                    </div>
-                `).join('');
-
-                group.innerHTML = `
-                    <div class="session-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Session: ${escapeHtml(sessionId)}</span>
-                        <button class="btn-secondary resolve-btn" data-session="${escapeHtml(sessionId)}">Mark Resolved</button>
-                    </div>
-                    <div class="session-body">${messagesHtml}</div>
-                    <div class="session-reply" style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-                        <input type="text" class="reply-input" data-session="${escapeHtml(sessionId)}" placeholder="Type a reply..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <button class="btn-primary send-reply-btn" data-session="${escapeHtml(sessionId)}" style="width: auto; padding: 8px 16px;">Send Reply</button>
-                    </div>
-                `;
-                container.appendChild(group);
-            });
-
-            document.querySelectorAll('.resolve-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const sid = e.target.getAttribute('data-session');
-                    await resolveSession(sid);
-                });
-            });
-
-            document.querySelectorAll('.send-reply-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const sid = e.target.getAttribute('data-session');
-                    const input = document.querySelector(`.reply-input[data-session="${sid}"]`);
-                    await sendReply(sid, input.value);
-                });
-            });
+            if (needsFullRebuild) {
+                renderEscalationsFull(container, data);
+            } else {
+                renderEscalationsSurgical(container, data);
+            }
         } catch (error) {
             console.error('Escalations error:', error);
         }
+    }
+
+    // Full rebuild path: wipes the panel and re-renders every session
+    // group, then wires up the resolve / send-reply event listeners.
+    // Used on the very first load and whenever a brand-new escalated
+    // session appears (its reply input + buttons need to be created).
+    function renderEscalationsFull(container, data) {
+        container.innerHTML = '';
+
+        Object.entries(data).forEach(([sessionId, messages]) => {
+            container.appendChild(buildSessionGroup(sessionId, messages));
+        });
+
+        attachEscalationListeners();
+    }
+
+    // Surgical update path: for each existing .session-group, refresh
+    // only its .session-body (the message list) and scroll it to the
+    // bottom if a new message arrived. The .session-reply input is
+    // left alone so an admin typing a reply does not have their text
+    // wiped. If a session exists in the API response but not in the
+    // DOM yet, or vice versa, we fall back to a full rebuild so the
+    // set of groups stays consistent and listeners stay attached.
+    function renderEscalationsSurgical(container, data) {
+        const dataSessionIds = Object.keys(data);
+        const existingSessionIds = Array.from(
+            container.querySelectorAll('.session-group')
+        ).map(g => g.getAttribute('data-session'));
+
+        const sameSet = dataSessionIds.length === existingSessionIds.length
+            && dataSessionIds.every(id => existingSessionIds.includes(id));
+
+        if (!sameSet) {
+            // A session was added, resolved-and-removed, or both. The
+            // simple path can't reconcile that without losing the
+            // in-progress reply text, but in practice this is rare and
+            // a rebuild keeps the UI correct. We do still try to
+            // preserve the active reply value across the rebuild below.
+            const activeInput = document.activeElement;
+            const preservedValue = (activeInput && activeInput.classList
+                && activeInput.classList.contains('reply-input'))
+                ? activeInput.value
+                : null;
+            const preservedSession = preservedValue !== null
+                ? activeInput.getAttribute('data-session')
+                : null;
+
+            renderEscalationsFull(container, data);
+
+            if (preservedValue !== null) {
+                const restored = container.querySelector(
+                    `.reply-input[data-session="${preservedSession}"]`
+                );
+                if (restored) {
+                    restored.value = preservedValue;
+                    restored.focus();
+                }
+            }
+            return;
+        }
+
+        dataSessionIds.forEach(sessionId => {
+            const group = container.querySelector(
+                `.session-group[data-session="${cssEscape(sessionId)}"]`
+            );
+            if (!group) {
+                return;
+            }
+
+            const body = group.querySelector('.session-body');
+            if (!body) {
+                return;
+            }
+
+            const messages = data[sessionId];
+            const previousCount = body.querySelectorAll('.log-entry').length;
+            const newCount = messages.length;
+
+            body.innerHTML = messages.map(m => `
+                <div class="log-entry">
+                    <span class="role ${m.role}">${m.role}</span>
+                    <span class="text">${escapeHtml(m.message)}</span>
+                </div>
+            `).join('');
+
+            if (newCount > previousCount) {
+                body.scrollTop = body.scrollHeight;
+            }
+        });
+    }
+
+    // Builds a single .session-group element (header + body + reply
+    // block) for the given session. Extracted so the full-rebuild path
+    // stays readable and there's one source of truth for the markup.
+    function buildSessionGroup(sessionId, messages) {
+        const group = document.createElement('div');
+        group.className = 'session-group';
+        group.setAttribute('data-session', sessionId);
+
+        let messagesHtml = messages.map(m => `
+            <div class="log-entry">
+                <span class="role ${m.role}">${m.role}</span>
+                <span class="text">${escapeHtml(m.message)}</span>
+            </div>
+        `).join('');
+
+        group.innerHTML = `
+            <div class="session-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Session: ${escapeHtml(sessionId)}</span>
+                <button class="btn-secondary resolve-btn" data-session="${escapeHtml(sessionId)}">Mark Resolved</button>
+            </div>
+            <div class="session-body">${messagesHtml}</div>
+            <div class="session-reply" style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                <input type="text" class="reply-input" data-session="${escapeHtml(sessionId)}" placeholder="Type a reply..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <button class="btn-primary send-reply-btn" data-session="${escapeHtml(sessionId)}" style="width: auto; padding: 8px 16px;">Send Reply</button>
+            </div>
+        `;
+        return group;
+    }
+
+    // Wires up the resolve and send-reply buttons after a full rebuild.
+    function attachEscalationListeners() {
+        document.querySelectorAll('.resolve-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const sid = e.target.getAttribute('data-session');
+                await resolveSession(sid);
+            });
+        });
+
+        document.querySelectorAll('.send-reply-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const sid = e.target.getAttribute('data-session');
+                const input = document.querySelector(`.reply-input[data-session="${sid}"]`);
+                await sendReply(sid, input.value);
+            });
+        });
+    }
+
+    // Session IDs can contain characters that aren't valid in a CSS
+    // attribute selector (e.g. dots, colons, slashes in UUIDs). This
+    // delegates to the platform's CSS.escape() if available, with a
+    // minimal fallback for older runtimes.
+    function cssEscape(value) {
+        if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+            return CSS.escape(value);
+        }
+        return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
     }
 
     async function sendReply(sessionId, messageText) {
@@ -418,4 +581,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial load for first active tab
     loadDashboard();
+
+    // If the Escalations tab is the one marked active on page load
+    // (e.g. user deep-linked to it, or default tab is changed later),
+    // start polling right away. The tab click handler above only fires
+    // on user interaction, so without this check the poll would never
+    // start until the user clicked the tab.
+    const initiallyActiveTab = document.querySelector('.tab-btn.active');
+    if (initiallyActiveTab && initiallyActiveTab.getAttribute('data-tab') === 'escalations') {
+        startEscalationPolling();
+    }
 });
