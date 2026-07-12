@@ -99,7 +99,7 @@
                 </div>
             </div>
             <div class="column">
-                <div class="card">
+                <div class="card" id="listings-card">
                     <div class="card-header">
                         <h2 style="color: #1E293B;">Existing Listings</h2>
                         <button id="refresh-listings" class="btn-secondary">Refresh</button>
@@ -267,8 +267,16 @@
         padding: 20px;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
-        height: 100%;
+        height: auto;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    /* The "Existing Listings" card sits next to the "Add New Listing"
+       card in a two-column layout; the card border is redundant there
+       and was the only card whose border looked unwanted. Override
+       scoped to its id so the other admin cards (Leads, Conversations,
+       Escalations) keep their intentional border. */
+    #listings-card {
+        border: none;
     }
     .card-header {
         display: flex;
