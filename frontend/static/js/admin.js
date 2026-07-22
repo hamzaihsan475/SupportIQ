@@ -282,29 +282,160 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Conversations fetch failed');
             const data = await response.json();
 
-            const container = document.getElementById('conv-container');
-            container.innerHTML = '';
+            // Remember which session the admin was viewing so the refresh
+            // button can restore the highlight + detail panel afterwards.
+            // We read the current active state from the DOM rather than a
+            // module variable because the tab can be reloaded multiple
+            // times and a single source-of-truth is the rendered panel.
+            const previousSelected = document.querySelector(
+                '#conv-list-panel .conv-session-item.active'
+            );
+            const previousSelectedId = previousSelected
+                ? previousSelected.getAttribute('data-session')
+                : null;
 
-            Object.entries(data).forEach(([sessionId, messages]) => {
-                const group = document.createElement('div');
-                group.className = 'session-group';
+            const listPanel = document.getElementById('conv-list-panel');
+            const detailPanel = document.getElementById('conv-detail-panel');
+            // Guard against a stale/mismatched DOM (e.g. browser served a
+            // cached admin.html that still has the pre-redesign single
+            // container). Without this, listPanel.innerHTML = '' below
+            // throws "Cannot set properties of null" and the whole
+            // loadConversations() fails. We bail with a clear console
+            // error so the admin can see what went wrong instead of
+            // just a silent blank panel.
+            if (!listPanel || !detailPanel) {
+                console.error(
+                    'Conversations tab DOM mismatch: expected #conv-list-panel '
+                    + 'and #conv-detail-panel. The page is likely serving a '
+                    + 'stale cached admin.html — hard-refresh (Ctrl+Shift+R) '
+                    + 'or clear cache.'
+                );
+                return;
+            }
+            listPanel.innerHTML = '';
 
-                let messagesHtml = messages.map(m => `
-                    <div class="log-entry">
-                        <span class="role ${m.role}">${m.role}</span>
-                        <span class="text">${escapeHtml(m.message)}</span>
-                    </div>
-                `).join('');
+            const sessionIds = Object.keys(data);
+            if (sessionIds.length === 0) {
+                listPanel.innerHTML = '<div class="conv-list-empty">No conversations found.</div>';
+                renderConversationDetail(null, []);
+                return;
+            }
 
-                group.innerHTML = `
-                    <div class="session-header">Session: ${escapeHtml(sessionId)}</div>
-                    <div class="session-body">${messagesHtml}</div>
+            let restoredSelectedId = null;
+            sessionIds.forEach(sessionId => {
+                const messages = data[sessionId] || [];
+                const lastTimestamp = messages.length > 0
+                    ? messages[messages.length - 1].timestamp
+                    : null;
+                const lastTimestampText = lastTimestamp
+                    ? formatTimestamp(lastTimestamp)
+                    : '—';
+
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'conv-session-item';
+                item.setAttribute('data-session', sessionId);
+                item.innerHTML = `
+                    <div class="conv-session-id">${escapeHtml(sessionId)}</div>
+                    <div class="conv-session-meta">Last message: ${escapeHtml(lastTimestampText)}</div>
                 `;
-                container.appendChild(group);
+
+                if (sessionId === previousSelectedId) {
+                    item.classList.add('active');
+                    restoredSelectedId = sessionId;
+                }
+
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('#conv-list-panel .conv-session-item')
+                        .forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+                    renderConversationDetail(sessionId, data[sessionId] || []);
+                });
+
+                listPanel.appendChild(item);
             });
+
+            // If the previously selected session is still in the new
+            // data, restore its detail view. Otherwise fall back to
+            // the placeholder so the right panel doesn't show stale
+            // content from a session that no longer exists.
+            if (restoredSelectedId) {
+                renderConversationDetail(
+                    restoredSelectedId,
+                    data[restoredSelectedId] || []
+                );
+            } else {
+                renderConversationDetail(null, []);
+            }
         } catch (error) {
             console.error('Conversations error:', error);
         }
+    }
+
+    // Renders the right-hand detail panel. `sessionId === null` shows the
+    // placeholder state. Otherwise renders the session header plus the
+    // full message history in the same USER/BOT format as before, then
+    // auto-scrolls the detail body to the bottom.
+    function renderConversationDetail(sessionId, messages) {
+        const detailPanel = document.getElementById('conv-detail-panel');
+        // Same guard as in loadConversations() — bail early if the DOM
+        // is stale/mismatched instead of crashing on innerHTML = ''.
+        if (!detailPanel) {
+            console.error('renderConversationDetail: #conv-detail-panel not found in DOM.');
+            return;
+        }
+        detailPanel.innerHTML = '';
+
+        if (sessionId === null) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'conv-detail-placeholder';
+            placeholder.textContent = 'Select a session to view the conversation.';
+            detailPanel.appendChild(placeholder);
+            return;
+        }
+
+        const header = document.createElement('div');
+        header.className = 'conv-detail-header';
+        header.textContent = `Session: ${sessionId}`;
+        detailPanel.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'conv-detail-body';
+
+        if (!messages || messages.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'conv-detail-placeholder';
+            empty.textContent = 'No messages in this session.';
+            detailPanel.appendChild(body);
+            body.appendChild(empty);
+            return;
+        }
+
+        body.innerHTML = messages.map(m => `
+            <div class="log-entry">
+                <span class="role ${m.role}">${m.role}</span>
+                <span class="text">${escapeHtml(m.message)}</span>
+            </div>
+        `).join('');
+
+        detailPanel.appendChild(body);
+
+        // Defer scrolling to next frame so the DOM has a chance to lay
+        // out the freshly-rendered messages before we measure scrollHeight.
+        requestAnimationFrame(() => {
+            body.scrollTop = body.scrollHeight;
+        });
+    }
+
+    // Format a timestamp value for display in the session list. Accepts
+    // either an ISO string, an epoch number, or null/undefined. Falls
+    // back to the raw value if Date parsing fails so admins still see
+    // something useful.
+    function formatTimestamp(value) {
+        if (value === null || value === undefined || value === '') return '';
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return String(value);
+        return date.toLocaleString();
     }
 
     async function loadEscalations() {
