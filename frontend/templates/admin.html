@@ -158,8 +158,13 @@
                 <h2 style="color: #1E293B;">Chat Logs</h2>
                 <button id="refresh-convs" class="btn-secondary">Refresh</button>
             </div>
-            <div id="conv-container">
-                <!-- Grouped conversations load here -->
+            <div class="conv-layout">
+                <div class="conv-list-panel" id="conv-list-panel">
+                    <!-- Session list loads here -->
+                </div>
+                <div class="conv-detail-panel" id="conv-detail-panel">
+                    <!-- Conversation detail loads here -->
+                </div>
             </div>
         </div>
     </div>
@@ -305,6 +310,96 @@
     }
 
     /* Conversation Logs */
+    .conv-layout {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        gap: 20px;
+        min-height: 500px;
+    }
+    @media (max-width: 900px) {
+        .conv-layout { grid-template-columns: 1fr; }
+    }
+    .conv-list-panel {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .conv-list-panel .conv-list-empty {
+        padding: 30px 20px;
+        text-align: center;
+        color: #64748B;
+        font-size: 13px;
+    }
+    .conv-session-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: #FFFFFF;
+        border: none;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 12px 15px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.15s;
+    }
+    .conv-session-item:hover {
+        background: #F1F5F9;
+    }
+    .conv-session-item.active {
+        background: #1E3A5F;
+        color: #FFFFFF;
+    }
+    .conv-session-item.active .conv-session-meta {
+        color: #DBEAFE;
+    }
+    .conv-session-id {
+        font-weight: 600;
+        font-size: 13px;
+        color: #1E3A5F;
+        word-break: break-all;
+        margin-bottom: 4px;
+    }
+    .conv-session-item.active .conv-session-id {
+        color: #FFFFFF;
+    }
+    .conv-session-meta {
+        font-size: 11px;
+        color: #64748B;
+    }
+    .conv-detail-panel {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        max-height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+    .conv-detail-header {
+        padding: 12px 15px;
+        border-bottom: 1px solid #E2E8F0;
+        font-weight: 600;
+        font-size: 13px;
+        color: #1E3A5F;
+        background: #F8FAFC;
+        word-break: break-all;
+    }
+    .conv-detail-body {
+        padding: 10px 15px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .conv-detail-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: #64748B;
+        font-size: 14px;
+        padding: 40px 20px;
+        text-align: center;
+    }
     .session-group {
         margin-bottom: 30px;
         border: 1px solid #E2E8F0;
