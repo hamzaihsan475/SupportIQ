@@ -4,16 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SupportIQ{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/landing_styles.css">
+    <link rel="stylesheet" href="/static/css/predictor.css">
+    <link rel="stylesheet" href="/static/css/listings.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/states.css">
 </head>
-<body>
+<body class="portal-layout">
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="nav-logo">SupportIQ</a>
-            <div class="nav-links">
-                <a href="/listings">Listings</a>
-                <a href="/predictor">Predictor</a>
+            <div class="nav-left">
+                <a href="/" class="nav-logo">SupportIQ</a>
+                <div class="nav-main-links">
+                    <a href="/listings">Listings</a>
+                    <a href="/predictor">Price Predictor</a>
+                </div>
+            </div>
+            <div class="nav-right">
                 <a href="/admin">Admin</a>
                 <a href="/submit-listing" class="nav-cta">Post a Listing</a>
             </div>
@@ -22,10 +34,21 @@
     <main>
         {% block content %}{% endblock %}
     </main>
-    <footer>
-        <p>&copy; 2026 SupportIQ</p>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <span class="footer-logo">SupportIQ</span>
+                <p>Professional Real Estate Intelligence for Karachi.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Contact Us</a>
+            </div>
+            <p class="footer-copy">&copy; 2026 SupportIQ. All rights reserved.</p>
+        </div>
     </footer>
-
+    <script src="/static/js/ui-states.js"></script>
     <button id="chat-button">💬</button>
 
     <div id="chat-lead-modal" class="modal hidden">

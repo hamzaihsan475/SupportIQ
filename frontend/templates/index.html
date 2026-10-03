@@ -1,53 +1,489 @@
 {% extends "base.html" %}
 
-{% block title %}Home | SupportIQ{% endblock %}
+{% block title %}Find Your Home in Karachi | SupportIQ{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="hero-content">
-        <h1>Find Your Perfect Property in Karachi</h1>
-        <p>AI-powered price predictions, smart chatbot support, and verified listings — all in one platform.</p>
-        <div class="hero-actions">
-            <a href="/listings" class="btn btn-primary">Browse Listings</a>
-            <a href="/predictor" class="btn btn-secondary">Try Price Predictor</a>
-        </div>
-    </div>
-</section>
 
-<section class="stats-bar">
-    <div class="stats-container">
-        <div class="stat-item">
-            <span class="stat-value">289+</span>
-            <span class="stat-label">Locations</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">16,000+</span>
-            <span class="stat-label">Properties Analyzed</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">AI-Powered</span>
-            <span class="stat-label">Support</span>
-        </div>
-    </div>
-</section>
+<div class="landing-portal">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-wrap">
+            <div class="hero-overlay">
+                <div class="hero-content">
+                    <h1 class="hero-title">Find a home in Karachi</h1>
+                    <p class="hero-subtitle">Professional intelligence for the city's real estate market.</p>
 
-<section class="features">
-    <div class="features-grid">
-        <div class="feature-card">
-            <span class="feature-index" aria-hidden="true">01</span>
-            <h3>Verified Karachi Listings</h3>
-            <p>Browse properties across DHA, Clifton, Gulshan and Bahria Town each one checked against ownership records before it goes live.</p>
+                    <div class="hero-search-container">
+                        <div class="search-tabs">
+                            <button class="tab-btn active" data-tab="buy">Buy</button>
+                            <button class="tab-btn" data-tab="sold">Sold</button>
+                        </div>
+                        <form class="search-bar" id="hero-search-form">
+                            <div class="input-group">
+                                <input type="text" id="hero-location" placeholder="Area or sector, e.g. DHA Phase 6" autocomplete="off">
+                                <div id="location-autocomplete" class="autocomplete-results hidden"></div>
+                            </div>
+                            <button type="submit" class="btn-search">Search</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1600" alt="Luxury Real Estate" class="hero-image">
         </div>
-        <div class="feature-card">
-            <span class="feature-index" aria-hidden="true">02</span>
-            <h3>Market-Rate Estimates</h3>
-            <p>Our model prices any Karachi address from bedrooms and area to locality demand, so you can negotiate from a number, not a guess.</p>
-        </div>
-        <div class="feature-card">
-            <span class="feature-index" aria-hidden="true">03</span>
-            <h3>Ask the Property Concierge</h3>
-            <p>Message our assistant in English or Roman Urdu for listing help, price checks and lead follow-ups answers in seconds, not callbacks.</p>
-        </div>
+    </section>
+
+    <div class="container">
+        <!-- Area Exploration -->
+        <section class="explore-section">
+            <h2 class="section-title">Explore homes by area</h2>
+            <div class="area-grid" id="area-grid">
+                <!-- Loaded via JS: DHA, Clifton, etc. -->
+                <div class="area-card">
+                    <div class="area-img-placeholder"></div>
+                    <div class="area-info">
+                        <h3>DHA</h3>
+                        <p id="count-dha">Loading...</p>
+                    </div>
+                </div>
+                <div class="area-card">
+                    <div class="area-img-placeholder"></div>
+                    <div class="area-info">
+                        <h3>Clifton</h3>
+                        <p id="count-clifton">Loading...</p>
+                    </div>
+                </div>
+                <div class="area-card">
+                    <div class="area-img-placeholder"></div>
+                    <div class="area-info">
+                        <h3>Gulshan-e-Iqbal</h3>
+                        <p id="count-gulshan">Loading...</p>
+                    </div>
+                </div>
+                <div class="area-card">
+                    <div class="area-img-placeholder"></div>
+                    <div class="area-info">
+                        <h3>Bahria Town</h3>
+                        <p id="count-bahria">Loading...</p>
+                    </div>
+                </div>
+                <div class="area-card">
+                    <div class="area-img-placeholder"></div>
+                    <div class="area-info">
+                        <h3>North Nazimabad</h3>
+                        <p id="count-north">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Latest Listings -->
+        <section class="latest-section">
+            <div class="section-header">
+                <h2 class="section-title">Latest Listings</h2>
+                <a href="/listings" class="view-all">View All Properties &rarr;</a>
+            </div>
+            <div class="latest-grid" id="latest-grid">
+                <!-- Loaded via JS -->
+            </div>
+        </section>
+
+        <!-- Value Block -->
+        <section class="value-block">
+            <div class="value-content">
+                <h3>Know what a property is worth</h3>
+                <p>Get professional price estimates based on real-time market data in Karachi.</p>
+                <a href="/predictor" class="btn btn-primary">Go to Price Predictor</a>
+            </div>
+        </section>
+
+        <!-- Assistant Block -->
+        <section class="assistant-block">
+            <div class="assistant-content">
+                <h3>Have questions about a property?</h3>
+                <p>Our AI Assistant can help you find the perfect home or analyze a listing.</p>
+                <button class="btn btn-secondary" id="open-assistant">Ask our assistant</button>
+            </div>
+        </section>
     </div>
-</section>
+</div>
+
+<style>
+    .landing-portal {
+        padding-bottom: 4rem;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        position: relative;
+        width: 100%;
+        margin-bottom: 4rem;
+    }
+
+    .hero-wrap {
+        position: relative;
+        height: 560px;
+        width: 100%;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+    }
+
+    .hero-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        color: #FFFFFF;
+        text-align: center;
+    }
+
+    .hero-content {
+        max-width: 700px;
+        padding: 0 2rem;
+    }
+
+    .hero-content h1 {
+        color: #FFFFFF;
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-content p {
+        font-size: 1.25rem;
+        margin-bottom: 3rem;
+        color: #FFFFFF;
+        opacity: 1;
+    }
+
+    .hero-search-container {
+        background: #FFFFFF;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: none;
+        border: 1px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .search-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.5rem;
+    }
+
+    .search-tabs .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        font-size: var(--fs-small);
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--color-text-muted);
+        transition: color 0.15s ease;
+    }
+
+    .search-tabs .tab-btn.active {
+        color: var(--color-primary);
+        border-bottom: 2px solid var(--color-primary);
+    }
+
+    .search-bar {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .search-bar .input-group {
+        flex: 1;
+        position: relative;
+    }
+
+    .search-bar input {
+        width: 100%;
+        height: 48px;
+        padding: 0.875rem;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        font-size: var(--fs-body);
+        box-sizing: border-box;
+    }
+
+    .btn-search {
+        background-color: var(--color-accent);
+        color: #FFFFFF;
+        border: none;
+        padding: 0 1.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-search:hover {
+        background-color: var(--color-accent-hover);
+    }
+
+    .autocomplete-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        border-radius: 0 0 4px 4px;
+        z-index: 10;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .autocomplete-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        font-size: var(--fs-small);
+    }
+
+    .autocomplete-item:hover {
+        background-color: var(--color-bg-page);
+    }
+
+    /* Area Section */
+    .explore-section {
+        margin-top: 4rem;
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .area-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .area-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color 0.15s ease;
+    }
+
+    .area-card:hover {
+        border-color: var(--color-accent);
+    }
+
+    .area-img-placeholder {
+        height: 120px;
+        background-color: var(--color-bg-page);
+    }
+
+    .area-info {
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .area-info h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .area-info p {
+        font-size: var(--fs-small);
+        color: var(--color-text-muted);
+        margin: 0;
+    }
+
+    /* Latest Listings */
+    .latest-section {
+        margin-top: 5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .view-all {
+        color: var(--color-accent);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: var(--fs-small);
+    }
+
+    .latest-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    /* Value & Assistant Blocks */
+    .value-block, .assistant-block {
+        margin-top: 4rem;
+        padding: 3rem 2rem;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid var(--color-border);
+    }
+
+    .value-block {
+        background-color: var(--color-bg-card);
+    }
+
+    .assistant-block {
+        background-color: var(--color-primary);
+        color: #FFFFFF;
+    }
+
+    .assistant-block h3 {
+        color: #FFFFFF;
+    }
+
+    .assistant-block p {
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .hero-wrap { height: 420px; }
+        .hero-content h1 { font-size: 2rem; }
+        .hero-content p { font-size: 1rem; }
+        .search-bar { flex-direction: column; }
+        .btn-search { padding: 0.875rem; }
+        .area-grid { grid-template-columns: 1fr 1fr; }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 1. Hero Search Logic
+        const searchForm = document.getElementById('hero-search-form');
+        const locationInput = document.getElementById('hero-location');
+        const autocomplete = document.getElementById('location-autocomplete');
+        const tabs = document.querySelectorAll('.search-tabs .tab-btn');
+        let currentTab = 'buy';
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+            });
+        });
+
+        locationInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 2) {
+                autocomplete.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/locations?q=${encodeURIComponent(query)}`);
+                const locations = await resp.json();
+                if (locations.length === 0) {
+                    autocomplete.classList.add('hidden');
+                    return;
+                }
+                autocomplete.innerHTML = locations.map(loc =>
+                    `<div class="autocomplete-item" data-val="${loc}">${loc}</div>`
+                ).join('');
+                autocomplete.classList.remove('hidden');
+            } catch (err) {
+                console.error('Autocomplete error:', err);
+            }
+        });
+
+        autocomplete.addEventListener('click', (e) => {
+            const item = e.target.closest('.autocomplete-item');
+            if (!item) return;
+            locationInput.value = item.dataset.val;
+            autocomplete.classList.add('hidden');
+        });
+
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const loc = locationInput.value.trim();
+            const status = currentTab === 'buy' ? 'available' : 'sold';
+            window.location.href = `/listings?location=${encodeURIComponent(loc)}&status=${status}`;
+        });
+
+        // 2. Area Counts
+        const areas = {
+            'dha': 'DHA',
+            'clifton': 'Clifton',
+            'gulshan': 'Gulshan-e-Iqbal',
+            'bahria': 'Bahria Town',
+            'north': 'North Nazimabad'
+        };
+
+        try {
+            const resp = await fetch('/listings/');
+            const listings = await resp.json();
+
+            Object.entries(areas).forEach(([id, name]) => {
+                const count = listings.filter(l =>
+                    l.location?.toLowerCase().includes(id.toLowerCase())
+                ).length;
+                const el = document.getElementById('count-' + id);
+                if (el) el.textContent = `${count} properties`;
+            });
+        } catch (err) {
+            console.error('Area count error:', err);
+        }
+
+        // 3. Latest Listings (6)
+        const latestGrid = document.getElementById('latest-grid');
+        try {
+            const resp = await fetch('/listings/');
+            const listings = await resp.json();
+            const latest = listings.slice(0, 6);
+
+            latestGrid.innerHTML = latest.map(l => `
+                <div class="listing-card" onclick="window.location.href='/listings/view/${l.id}'">
+                    <div class="listing-image-wrap">
+                        <img src="${l.images?.[0] || '/static/img/placeholder.jpg'}" alt="${l.title}">
+                    </div>
+                    <div class="listing-card-body">
+                        <h3 class="listing-title">${l.title}</h3>
+                        <p class="listing-price">PKR ${l.price >= 10000000 ? (l.price/10000000).toFixed(1) + ' Crore' : (l.price/100000).toFixed(1) + ' Lakh'}</p>
+                        <p class="listing-location">${l.location}</p>
+                        <div class="listing-meta">
+                            <span>${l.bedrooms} Bed</span> | <span>${l.bathrooms} Bath</span> | <span>${l.area} sq yd</span>
+                        </div>
+                        <span class="listing-status-badge ${l.is_sold ? 'status-sold' : 'status-available'}">
+                            ${l.is_sold ? 'SOLD' : 'AVAILABLE'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('Latest listings error:', err);
+        }
+
+        // 4. Assistant block
+        document.getElementById('open-assistant').addEventListener('click', () => {
+            document.getElementById('chat-button').click();
+        });
+    });
+</script>
 {% endblock %}

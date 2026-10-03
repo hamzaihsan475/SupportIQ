@@ -4,12 +4,200 @@
 
 {% block content %}
 <div class="container">
-    <h1>Property Listings</h1>
-    <div id="listings-container" class="listings-grid">
-        <!-- Loaded via listings.js -->
-        <p class="no-listings">Loading listings...</p>
+    <div class="listings-search-header">
+        <div class="search-bar-wrap">
+            <div class="search-tabs">
+                <button class="tab-btn active" data-tab="buy">Buy</button>
+                <button class="tab-btn" data-tab="sold">Sold</button>
+            </div>
+            <form class="search-bar" id="listings-search-form">
+                <div class="input-group">
+                    <input type="text" id="listings-location" placeholder="Enter area, sector or project..." autocomplete="off">
+                    <div id="listings-autocomplete" class="autocomplete-results hidden"></div>
+                </div>
+                <button type="submit" class="btn-search">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="listings-main-layout">
+        <aside class="filter-sidebar">
+            <h3 class="filter-title">Filters</h3>
+            <div class="filter-group">
+                <label>Property Type</label>
+                <select id="filter-type">
+                    <option value="">All Types</option>
+                    <option value="House">House</option>
+                    <option value="Plot">Plot</option>
+                    <option value="Apartment">Apartment</option>
+                    <option value="Commercial">Commercial</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Price Range (PKR)</label>
+                <div class="range-inputs">
+                    <input type="number" id="filter-min-price" placeholder="Min">
+                    <input type="number" id="filter-max-price" placeholder="Max">
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>Bedrooms</label>
+                <input type="number" id="filter-beds" placeholder="Min Beds">
+            </div>
+            <div class="filter-group">
+                <label>Bathrooms</label>
+                <input type="number" id="filter-baths" placeholder="Min Baths">
+            </div>
+            <div class="filter-group">
+                <label>Sort By</label>
+                <select id="sort-price">
+                    <option value="default">Featured</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="newest">Newest First</option>
+                </select>
+            </div>
+            <button id="clear-filters" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All</button>
+        </aside>
+
+        <section class="results-area">
+            <div class="results-meta">
+                <span id="result-count">0 homes found</span>
+                <span class="location-tag" id="current-location-tag">All Karachi</span>
+            </div>
+            <div id="listings-container" class="listings-grid">
+                <!-- Loaded via listings.js -->
+            </div>
+        </section>
     </div>
 </div>
+
+<style>
+    .listings-search-header {
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+    .search-bar-wrap {
+        background: #FFFFFF;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--color-border);
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 600px;
+        width: 100%;
+    }
+    .search-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.5rem;
+    }
+    .search-tabs .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        font-size: var(--fs-small);
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--color-text-muted);
+    }
+    .search-tabs .tab-btn.active {
+        color: var(--color-primary);
+        border-bottom: 2px solid var(--color-primary);
+    }
+    .search-bar {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .search-bar .input-group {
+        flex: 1;
+        position: relative;
+    }
+    .search-bar input {
+        width: 100%;
+        padding: 0.875rem;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+    }
+    .btn-search {
+        background-color: var(--color-accent);
+        color: #FFFFFF;
+        border: none;
+        padding: 0 1.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .listings-main-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+    }
+    .filter-sidebar {
+        background: var(--color-bg-card);
+        padding: 1.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+    }
+    .filter-title {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-group {
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .filter-group label {
+        font-size: var(--fs-small);
+        font-weight: 600;
+        color: var(--color-text-muted);
+    }
+    .range-inputs {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .range-inputs input {
+        width: 50%;
+        padding: 0.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+    }
+    .filter-group input, .filter-group select {
+        padding: 0.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+    }
+    .results-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .results-meta span {
+        font-weight: 600;
+        color: var(--color-primary);
+    }
+    .location-tag {
+        background: var(--color-bg-page);
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: var(--fs-small);
+        border: 1px solid var(--color-border);
+    }
+
+    @media (max-width: 900px) {
+        .listings-main-layout { grid-template-columns: 1fr; }
+        .filter-sidebar { position: relative; top: 0; margin-bottom: 2rem; }
+    }
+</style>
 
 <script src="{{ url_for('static', path='/js/listings.js') }}"></script>
 {% endblock %}

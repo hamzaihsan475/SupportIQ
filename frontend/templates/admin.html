@@ -41,7 +41,7 @@
         <div class="admin-layout-split">
             <div class="column">
                 <div class="card">
-                    <h2 style="color: #1E293B;">Add New Listing</h2>
+                    <h2>Add New Listing</h2>
                     <form id="add-listing-form">
                         <div class="form-group">
                             <label for="title">Title</label>
@@ -92,39 +92,41 @@
                         <div class="form-group">
                             <label for="add-images">Images (optional, up to 5)</label>
                             <input type="file" id="add-images" name="images" multiple accept="image/jpeg,image/png,image/webp">
-                            <small style="color: #64748B; font-size: 12px;">JPG, PNG, or WebP. Max 5 MB per image, 5 images total.</small>
+                            <small style="color: var(--color-text-muted); font-size: 12px;">JPG, PNG, or WebP. Max 5 MB per image, 5 images total.</small>
                         </div>
-                        <button type="submit" class="btn-primary">Add Listing</button>
+                        <button type="submit" class="btn btn-primary">Add Listing</button>
                     </form>
                 </div>
             </div>
             <div class="column">
                 <div class="card" id="listings-card">
                     <div class="card-header">
-                        <h2 style="color: #1E293B;">Existing Listings</h2>
-                        <button id="refresh-listings" class="btn-secondary">Refresh</button>
+                        <h2>Existing Listings</h2>
+                        <button id="refresh-listings" class="btn btn-secondary">Refresh</button>
                     </div>
-                    <div class="status-filter" id="listings-status-filter" style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div class="status-filter" id="listings-status-filter">
                         <button type="button" class="status-filter-btn active" data-filter="all">All</button>
                         <button type="button" class="status-filter-btn" data-filter="pending">Pending</button>
                         <button type="button" class="status-filter-btn" data-filter="approved">Approved</button>
                         <button type="button" class="status-filter-btn" data-filter="rejected">Rejected</button>
                         <button type="button" class="status-filter-btn" data-filter="deleted">Deleted</button>
                     </div>
-                    <table id="listings-table">
-                        <thead>
-                            <tr style="background: #F8FAFC;">
-                                <th>Title</th>
-                                <th>Location</th>
-                                <th>Price</th>
-                                <th>Type</th>
-                                <th>Rooms</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                    <div class="table-container">
+                        <table id="listings-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Location</th>
+                                    <th>Price</th>
+                                    <th>Type</th>
+                                    <th>Rooms</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -134,20 +136,22 @@
     <div id="leads" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2 style="color: #1E293B;">Captured Leads</h2>
-                <button id="refresh-leads" class="btn-secondary">Refresh</button>
+                <h2>Captured Leads</h2>
+                <button id="refresh-leads" class="btn btn-secondary">Refresh</button>
             </div>
-            <table id="leads-table">
-                <thead style="background: #F8FAFC;">
-                    <tr style="background: #F8FAFC;">
-                        <th>Name</th>
-                        <th>Budget</th>
-                        <th>Contact</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="table-container">
+                <table id="leads-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Budget</th>
+                            <th>Contact</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -155,8 +159,8 @@
     <div id="conversations" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2 style="color: #1E293B;">Chat Logs</h2>
-                <button id="refresh-convs" class="btn-secondary">Refresh</button>
+                <h2>Chat Logs</h2>
+                <button id="refresh-convs" class="btn btn-secondary">Refresh</button>
             </div>
             <div class="conv-layout">
                 <div class="conv-list-panel" id="conv-list-panel">
@@ -173,8 +177,8 @@
     <div id="escalations" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <h2 style="color: #1E293B;">Escalated Sessions</h2>
-                <button id="refresh-escalations" class="btn-secondary">Refresh</button>
+                <h2>Escalated Sessions</h2>
+                <button id="refresh-escalations" class="btn btn-secondary">Refresh</button>
             </div>
             <div id="escalated-container">
                 <!-- Escalated conversations load here -->
@@ -182,405 +186,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    .admin-title {
-        margin-bottom: 30px;
-        font-weight: 700;
-        color: #1E293B;
-    }
-    .admin-tabs {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 25px;
-    }
-    .tab-btn {
-        padding: 12px 24px;
-        cursor: pointer;
-        border: 1px solid #E2E8F0;
-        background: #FFFFFF;
-        color: #64748B;
-        font-weight: 600;
-        border-radius: 4px;
-        transition: all 0.2s;
-    }
-    .tab-btn.active {
-        background: #1E3A5F;
-        color: #FFFFFF;
-        border-color: #1E3A5F;
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
-
-    /* Dashboard Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-    }
-    .stat-card {
-        background: #FFFFFF;
-        padding: 25px;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .stat-label {
-        display: block;
-        font-size: 14px;
-        color: #64748B;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .stat-value {
-        font-size: 32px;
-        font-weight: 700;
-        color: #1E293B;
-    }
-
-    /* Layout Split */
-    .admin-layout-split {
-        display: grid;
-        grid-template-columns: 350px 1fr;
-        gap: 25px;
-    }
-    @media (max-width: 900px) {
-        .admin-layout-split { grid-template-columns: 1fr; }
-    }
-
-    /* Form & General Card */
-    .form-group {
-        margin-bottom: 15px;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-    .form-group input, .form-group select {
-        padding: 10px;
-        border: 1px solid #E2E8F0;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-    .card {
-        background: #FFFFFF;
-        padding: 20px;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        height: auto;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    /* The "Existing Listings" card sits next to the "Add New Listing"
-       card in a two-column layout; the card border is redundant there
-       and was the only card whose border looked unwanted. Override
-       scoped to its id so the other admin cards (Leads, Conversations,
-       Escalations) keep their intentional border. */
-    #listings-card {
-        border: none;
-    }
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    /* Tables */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
-    th, td {
-        text-align: left;
-        padding: 12px;
-        border-bottom: 1px solid #E2E8F0;
-        font-size: 14px;
-        color: #1E293B;
-    }
-    th {
-        background: #F8FAFC;
-        font-weight: 600;
-        color: #64748B;
-    }
-
-    /* Conversation Logs */
-    .conv-layout {
-        display: grid;
-        grid-template-columns: 290px 1fr;
-        gap: 20px;
-        min-height: 500px;
-    }
-    @media (max-width: 900px) {
-        .conv-layout { grid-template-columns: 1fr; }
-    }
-    .conv-list-panel {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    .conv-list-panel .conv-list-empty {
-        padding: 30px 20px;
-        text-align: center;
-        color: #64748B;
-        font-size: 13px;
-    }
-    .conv-session-item {
-        display: block;
-        width: 100%;
-        text-align: left;
-        background: #FFFFFF;
-        border: none;
-        border-bottom: 1px solid #E2E8F0;
-        padding: 12px 15px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: background 0.15s;
-    }
-    .conv-session-item:hover {
-        background: #F1F5F9;
-    }
-    .conv-session-item.active {
-        background: #1E3A5F;
-        color: #FFFFFF;
-    }
-    .conv-session-item.active .conv-session-meta {
-        color: #DBEAFE;
-    }
-    .conv-session-id {
-        font-weight: 600;
-        font-size: 13px;
-        color: #1E3A5F;
-        word-break: break-all;
-        margin-bottom: 4px;
-    }
-    .conv-session-item.active .conv-session-id {
-        color: #FFFFFF;
-    }
-    .conv-session-meta {
-        font-size: 11px;
-        color: #64748B;
-    }
-    .conv-detail-panel {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        max-height: 600px;
-        display: flex;
-        flex-direction: column;
-    }
-    .conv-detail-header {
-        padding: 12px 15px;
-        border-bottom: 1px solid #E2E8F0;
-        font-weight: 600;
-        font-size: 13px;
-        color: #1E3A5F;
-        background: #F8FAFC;
-        word-break: break-all;
-    }
-    .conv-detail-body {
-        padding: 10px 15px;
-        overflow-y: auto;
-        flex: 1;
-    }
-    .conv-detail-placeholder {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        color: #64748B;
-        font-size: 14px;
-        padding: 40px 20px;
-        text-align: center;
-    }
-    .session-group {
-        margin-bottom: 30px;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .session-header {
-        background: #F1F5F9;
-        padding: 10px 15px;
-        font-weight: 600;
-        border-bottom: 1px solid #E2E8F0;
-        font-size: 13px;
-        color: #1E3A5F;
-    }
-    .log-entry {
-        padding: 8px 15px;
-        font-size: 13px;
-        border-bottom: 1px solid #F8FAFC;
-    }
-    .log-entry .role {
-        font-weight: 700;
-        margin-right: 8px;
-        text-transform: uppercase;
-        font-size: 11px;
-    }
-    .log-entry .role.user { color: #1E293B; }
-    .log-entry .role.bot { color: #64748B; }
-
-    .btn-primary {
-        background: #2563EB;
-        color: #FFFFFF;
-        padding: 12px 20px;
-        border: none;
-        cursor: pointer;
-        border-radius: 4px;
-        font-weight: 600;
-        width: 100%;
-        transition: background 0.2s;
-    }
-    .btn-primary:hover {
-        background: #1d4ed8;
-    }
-    .btn-secondary {
-        background: #F1F5F9;
-        color: #1E3A5F;
-        padding: 8px 16px;
-        border: 1px solid #E2E8F0;
-        cursor: pointer;
-        border-radius: 4px;
-        font-size: 13px;
-        transition: all 0.2s;
-    }
-    .btn-secondary:hover {
-        background: #E2E8F0;
-        border-color: #2563EB;
-        color: #2563EB;
-    }
-    #success-notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #DCFCE7;
-        color: #166534;
-        padding: 15px 25px;
-        border: 1px solid #BBF7D0;
-        border-radius: 4px;
-        z-index: 2000;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    /* Listing status filter + badges */
-    .status-filter-btn {
-        padding: 6px 14px;
-        cursor: pointer;
-        border: 1px solid #E2E8F0;
-        background: #FFFFFF;
-        color: #64748B;
-        font-weight: 600;
-        border-radius: 4px;
-        font-size: 13px;
-        transition: all 0.2s;
-    }
-    .status-filter-btn:hover {
-        border-color: #2563EB;
-        color: #2563EB;
-    }
-    .status-filter-btn.active {
-        background: #1E3A5F;
-        color: #FFFFFF;
-        border-color: #1E3A5F;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .status-badge.pending {
-        background: #FEF3C7;
-        color: #92400E;
-    }
-    .status-badge.approved {
-        background: #DCFCE7;
-        color: #166534;
-    }
-    .status-badge.rejected {
-        background: #E2E8F0;
-        color: #475569;
-    }
-    .status-badge.available {
-        background: #DBEAFE;
-        color: #1E3A5F;
-    }
-    .status-badge.deleted {
-        background: #475569;
-        color: #F8FAFC;
-    }
-    .status-badge.sold {
-        background: #94A3B8;
-        color: #1E293B;
-    }
-
-    .listing-action-btn {
-        padding: 6px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid transparent;
-        margin-right: 4px;
-        transition: all 0.2s;
-    }
-    .listing-action-btn.approve {
-        background: #2563EB;
-        color: #FFFFFF;
-        border-color: #2563EB;
-    }
-    .listing-action-btn.approve:hover {
-        background: #1d4ed8;
-        border-color: #1d4ed8;
-    }
-    .listing-action-btn.reject {
-        background: #FFFFFF;
-        color: #64748B;
-        border-color: #E2E8F0;
-    }
-    .listing-action-btn.reject:hover {
-        color: #991B1B;
-        border-color: #DC2626;
-    }
-    .listing-action-btn.mark-sold {
-        background: #F1F5F9;
-        color: #1E3A5F;
-        border-color: #1E3A5F;
-    }
-    .listing-action-btn.mark-sold:hover {
-        background: #E2E8F0;
-    }
-    .listing-action-btn.mark-unsold {
-        background: #DBEAFE;
-        color: #1E3A5F;
-        border-color: #2563EB;
-    }
-    .listing-action-btn.mark-unsold:hover {
-        background: #BFDBFE;
-    }
-    .listing-action-btn.delete {
-        background: #FFFFFF;
-        color: #DC2626;
-        border-color: #FCA5A5;
-    }
-    .listing-action-btn.delete:hover {
-        background: #FEE2E2;
-        border-color: #DC2626;
-    }
-</style>
 
 <script src="/static/js/admin.js"></script>
 {% endblock %}
