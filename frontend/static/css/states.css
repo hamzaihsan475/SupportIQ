@@ -1,0 +1,44 @@
+/* --- Global State Styles --- */
+.state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    min-height: 300px;
+    color: var(--color-text-muted);
+}
+
+.state-container h3 {
+    margin-bottom: 1rem;
+    color: var(--color-primary);
+    font-size: 1.25rem;
+}
+
+.state-container p {
+    margin-bottom: 1.5rem;
+    font-size: var(--fs-body);
+}
+
+/* Loading Spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top: 3px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* A11y Focus Rings */
+:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+}

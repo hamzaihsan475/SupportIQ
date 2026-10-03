@@ -1,0 +1,55 @@
+/* --- Predictor Layout --- */
+.predictor-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 3rem;
+    margin-top: 3rem;
+    align-items: start;
+}
+
+.predictor-form {
+    background-color: var(--color-bg-card);
+    padding: 2.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.result-container {
+    padding: 2.5rem;
+    background-color: var(--color-bg-light);
+    border-left: 4px solid var(--color-accent);
+    border-top: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.result-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 1rem 0;
+}
+
+.result-label {
+    font-size: var(--fs-small);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+    .predictor-layout {
+        grid-template-columns: 1fr;
+    }
+}

@@ -2,6 +2,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('listings-container');
     if (!container) return;
 
+    // State management for filtering/sorting
+    let allListings = [];
+    let filteredListings = [];
+
     function formatPKR(price) {
         const val = parseFloat(price);
         if (isNaN(val)) return 'N/A';
@@ -25,11 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .replace(/'/g, '&#39;');
     }
 
-    // Build the image carousel HTML for a single listing card. Two cases:
-    //   - 0 images: a clean placeholder div, no controls.
-    //   - 1+ images: a single <img> with prev/next arrows and a "1 / N" counter.
-    // The current index is stored on a data-attribute on the wrap so the
-    // click handlers can read/write it without any extra state.
     function renderImageArea(listing) {
         const images = Array.isArray(listing.images) ? listing.images : [];
         if (images.length === 0) {
@@ -45,28 +44,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="listing-image-wrap" data-listing-id="${listing.id}" data-image-index="0" data-image-count="${images.length}">
                 <img class="listing-image" src="${safeFirst}" alt="${escapeHtml(listing.title || 'Property image')}">
                 ${hasMultiple ? `
-                    <button type="button" class="listing-carousel-btn prev" aria-label="Previous image">‹</button>
-                    <button type="button" class="listing-carousel-btn next" aria-label="Next image">›</button>
+                    <button type="button" class="listing-carousel-btn prev" aria-label="Previous image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <button type="button" class="listing-carousel-btn next" aria-label="Next image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
                     <span class="listing-image-counter">1 / ${images.length}</span>
                 ` : ''}
             </div>
         `;
     }
 
-    // Pure-vanilla carousel: cycle the visible <img> src on arrow click.
-    // Reads images from a JSON-encoded data attribute (set on the wrap at
-    // render time) so we never need to re-fetch the API for a cycle.
     function attachCarouselHandlers(container) {
         container.querySelectorAll('.listing-image-wrap').forEach(wrap => {
             const count = parseInt(wrap.getAttribute('data-image-count') || '0', 10);
-
             const img = wrap.querySelector('img');
             if (!img) return;
 
-            // Read images off the parent card — the same data attribute the
-            // arrow-cycling logic uses. Falls back to a single-element array
-            // so single-image cards still get a (no-op) carousel path that
-            // doesn't error.
             const card = wrap.closest('.listing-card');
             let images = [];
             if (card) {
@@ -75,13 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (_) { images = []; }
             }
 
-            // Click-to-zoom on the image itself. Bound directly on the <img>
-            // so e.stopPropagation() reliably prevents the click from bubbling
-            // up to the card-level navigation handler on the container. Toggling
-            // the .listing-image--zoomed class triggers the CSS scale, and we
-            // toggle .listing-image-wrap--zoom-open on the parent so the wrap's
-            // overflow:hidden doesn't clip the scaled image. This runs for
-            // every card (single- or multi-image) so zoom is always available.
             img.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isZoomed = img.classList.toggle('listing-image--zoomed');
@@ -92,10 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // Carousel arrow handlers only attach when there's actually
-            // something to cycle through. Single-image cards don't render
-            // arrow buttons in renderImageArea() either, so this is the
-            // matching skip.
             if (!count || images.length < 2) return;
 
             const prevBtn = wrap.querySelector('.listing-carousel-btn.prev');
@@ -123,81 +107,176 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    try {
-        const response = await fetch('/listings/');
-        if (!response.ok) throw new Error('Network response was not ok');
+    async function fetchAndRender() {
+        try {
+            const response = await fetch('/listings/');
+            if (!response.ok) throw new Error('Network response was not ok');
 
-        const listings = await response.json();
+            allListings = await response.json();
+            applyFiltersAndSort();
+        } catch (error) {
+            console.error('Error fetching listings:', error);
+            UIState.showError(container, 'Failed to load listings. Please try again later.', () => location.reload());
+        }
+    }
 
-        if (listings.length === 0) {
-            container.innerHTML = '<p class="no-listings">No listings available at the moment.</p>';
+    function applyFiltersAndSort() {
+        const type = document.getElementById('filter-type')?.value;
+        const minPrice = parseFloat(document.getElementById('filter-min-price')?.value) || 0;
+        const maxPrice = parseFloat(document.getElementById('filter-max-price')?.value) || Infinity;
+        const minBeds = parseInt(document.getElementById('filter-beds')?.value) || 0;
+        const minBaths = parseInt(document.getElementById('filter-baths')?.value) || 0;
+        const sort = document.getElementById('sort-price')?.value;
+        const locationQuery = document.getElementById('listings-location')?.value.toLowerCase().trim();
+
+        filteredListings = allListings.filter(l => {
+            const matchType = !type || l.property_type === type;
+            const matchPrice = l.price >= minPrice && l.price <= maxPrice;
+            const matchBeds = (l.bedrooms || 0) >= minBeds;
+            const matchBaths = (l.bathrooms || 0) >= minBaths;
+            const matchLoc = !locationQuery ||
+                (l.location && l.location.toLowerCase().includes(locationQuery)) ||
+                (l.address && l.address.toLowerCase().includes(locationQuery));
+
+            return matchType && matchPrice && matchBeds && matchBaths && matchLoc;
+        });
+
+        if (sort === 'price_asc') {
+            filteredListings.sort((a, b) => a.price - b.price);
+        } else if (sort === 'price_desc') {
+            filteredListings.sort((a, b) => b.price - a.price);
+        } else if (sort === 'newest') {
+            // Assuming API provides created_at, otherwise default sort
+            filteredListings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        updateUI();
+    }
+
+    function updateUI() {
+        const countEl = document.getElementById('result-count');
+        if (countEl) countEl.textContent = `${filteredListings.length} homes found`;
+
+        if (filteredListings.length === 0) {
+            UIState.showEmpty(container, 'No properties match your filters.');
             return;
         }
 
+        renderListings(filteredListings);
+    }
+
+    function renderListings(listings) {
         container.innerHTML = '';
         listings.forEach(listing => {
             const card = document.createElement('div');
             card.className = 'listing-card' + (listing.is_sold ? ' listing-card-sold' : '');
-            // Stash the image URLs as a JSON data-attribute so the carousel
-            // handlers can cycle through them without touching the API again.
             card.setAttribute('data-images', JSON.stringify(listing.images || []));
-            // Identifier used by the delegated click handler to navigate to
-            // this listing's detail page.
             card.setAttribute('data-listing-id', String(listing.id));
-            // Make the card keyboard-focusable so it's reachable without a mouse.
             card.setAttribute('role', 'link');
             card.setAttribute('tabindex', '0');
-            const soldBadge = listing.is_sold
-                ? ' <span class="listing-sold-badge">SOLD</span>'
-                : '';
+
+            const soldBadge = listing.is_sold ? ' <span class="listing-sold-badge">SOLD</span>' : '';
             const imageArea = renderImageArea(listing);
+
             card.innerHTML = `
                 ${imageArea}
-                <h3 class="listing-title">${escapeHtml(listing.title || listing.address || 'Unnamed Property')}${soldBadge}</h3>
-                <p><strong class="label">Location:</strong> ${escapeHtml(listing.location || listing.address || 'N/A')}</p>
-                <p><strong class="label">Type:</strong> ${escapeHtml(listing.property_type || 'N/A')}</p>
-                <p><strong class="label">Area:</strong> ${escapeHtml(listing.area || 'N/A')} sq yards</p>
-                <p><strong class="label">Rooms:</strong> ${escapeHtml(listing.bedrooms || 0)} Bed | ${escapeHtml(listing.bathrooms || 0)} Bath</p>
-                <p class="listing-price"><strong class="label">Price:</strong> ${formatPKR(listing.price)}</p>
+                <div class="listing-card-body">
+                    <h3 class="listing-title">${escapeHtml(listing.title || listing.address || 'Unnamed Property')}${soldBadge}</h3>
+                    <p><strong class="label">Location:</strong> ${escapeHtml(listing.location || listing.address || 'N/A')}</p>
+                    <p><strong class="label">Type:</strong> ${escapeHtml(listing.property_type || 'N/A')}</p>
+                    <p><strong class="label">Area:</strong> ${escapeHtml(listing.area || 'N/A')} sq yards</p>
+                    <p><strong class="label">Rooms:</strong> ${escapeHtml(listing.bedrooms || 0)} Bed | ${escapeHtml(listing.bathrooms || 0)} Bath</p>
+                    <p class="listing-price"><strong class="label">Price:</strong> ${formatPKR(listing.price)}</p>
+                </div>
             `;
             container.appendChild(card);
         });
 
         attachCarouselHandlers(container);
+    }
 
-        // Delegated click handler: clicking anywhere on a card navigates to
-        // its detail page. The carousel arrow handlers above call
-        // e.stopPropagation(), so they prevent this handler from firing when
-        // the user clicks a carousel button — required by the feature spec.
-        function navigateToCard(card) {
-            const id = card.getAttribute('data-listing-id');
-            if (!id) return;
-            window.location.href = `/listings/view/${encodeURIComponent(id)}`;
-        }
-        container.addEventListener('click', (e) => {
-            const card = e.target.closest('.listing-card');
-            if (!card) return;
-            navigateToCard(card);
+    // Event Listeners for Filters
+    ['filter-type', 'filter-min-price', 'filter-max-price', 'filter-beds', 'filter-baths', 'sort-price'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', applyFiltersAndSort);
+        document.getElementById(id)?.addEventListener('input', applyFiltersAndSort);
+    });
+
+    document.getElementById('clear-filters')?.addEventListener('click', () => {
+        document.getElementById('filter-type').value = '';
+        document.getElementById('filter-min-price').value = '';
+        document.getElementById('filter-max-price').value = '';
+        document.getElementById('filter-beds').value = '';
+        document.getElementById('filter-baths').value = '';
+        document.getElementById('sort-price').value = 'default';
+        applyFiltersAndSort();
+    });
+
+    const searchForm = document.getElementById('listings-search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            applyFiltersAndSort();
         });
-        // Keyboard support: Enter or Space on a focused card triggers nav,
-        // matching the role="link" affordance. Arrows are excluded by the
-        // carousel-button shortcut below — but those buttons have their own
-        // click handlers, not key handlers, so we just bail on Space/Enter
-        // when the focus is on a carousel button.
-        container.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            // If a carousel button has focus, let it (no key handler there)
-            // but we still don't want the card-level handler firing.
-            if (e.target.classList && e.target.classList.contains('listing-carousel-btn')) {
+    }
+
+    // Search Input Autocomplete (Existing logic preserved)
+    const locationInput = document.getElementById('listings-location');
+    const autocomplete = document.getElementById('listings-autocomplete');
+    if (locationInput && autocomplete) {
+        locationInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 2) {
+                autocomplete.classList.add('hidden');
                 return;
             }
-            const card = e.target.closest('.listing-card');
-            if (!card) return;
-            e.preventDefault();
-            navigateToCard(card);
+            try {
+                const resp = await fetch(`/api/locations?q=${encodeURIComponent(query)}`);
+                const locations = await resp.json();
+                if (locations.length === 0) {
+                    autocomplete.classList.add('hidden');
+                    return;
+                }
+                autocomplete.innerHTML = locations.map(loc =>
+                    `<div class="autocomplete-item" data-val="${loc}">${loc}</div>`
+                ).join('');
+                autocomplete.classList.remove('hidden');
+            } catch (err) { console.error('Autocomplete error:', err); }
         });
-    } catch (error) {
-        console.error('Error fetching listings:', error);
-        container.innerHTML = '<p>Error loading listings. Please try again later.</p>';
+
+        autocomplete.addEventListener('click', (e) => {
+            const item = e.target.closest('.autocomplete-item');
+            if (!item) return;
+            locationInput.value = item.dataset.val;
+            autocomplete.classList.add('hidden');
+            applyFiltersAndSort();
+        });
     }
+
+    await fetchAndRender();
+});
+
+function navigateToCard(card) {
+    const id = card.getAttribute('data-listing-id');
+    if (!id) return;
+    window.location.href = `/listings/view/${encodeURIComponent(id)}`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('listings-container');
+    if (!container) return;
+
+    container.addEventListener('click', (e) => {
+        const card = e.target.closest('.listing-card');
+        if (!card) return;
+        navigateToCard(card);
+    });
+
+    container.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        if (e.target.classList && e.target.classList.contains('listing-carousel-btn')) return;
+        const card = e.target.closest('.listing-card');
+        if (!card) return;
+        e.preventDefault();
+        navigateToCard(card);
+    });
 });

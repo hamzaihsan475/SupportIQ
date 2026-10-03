@@ -1,0 +1,188 @@
+/* --- Listing Cards Refinement --- */
+.listings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.listing-card {
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0;
+    transition: border-color 0.15s ease;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.listing-card:hover {
+    border-color: var(--color-accent);
+}
+
+.listing-card-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.listing-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: var(--color-bg-page);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.listing-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+}
+
+.listing-image.listing-image--zoomed {
+    cursor: zoom-out;
+    transform: scale(1.5);
+    z-index: 5;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+}
+
+.listing-image-wrap.listing-image-wrap--zoom-open {
+    overflow: visible;
+}
+
+.listing-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(20, 33, 61, 0.7);
+    color: #FFFFFF;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.listing-carousel-btn:hover {
+    background-color: var(--color-accent);
+}
+
+.listing-carousel-btn.prev { left: 10px; }
+.listing-carousel-btn.next { right: 10px; }
+
+.listing-image-counter {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 2;
+    background-color: rgba(20, 33, 61, 0.8);
+    color: #FFFFFF;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.listing-title {
+    font-family: var(--font-headings);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.listing-location {
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+}
+
+.listing-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.listing-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin-top: auto;
+}
+
+.listing-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.status-available {
+    background-color: #FFFFFF;
+    color: #166534;
+    border-color: #DCFCE7;
+}
+
+.status-sold {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+}
+
+.listing-card-sold {
+    opacity: 0.7;
+    border-left: 4px solid var(--color-border);
+}
+
+/* --- Control Bar Styles --- */
+.listings-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    background: var(--color-bg-card);
+    padding: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 3rem;
+    align-items: flex-end;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    font-size: var(--fs-small);
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.control-group input,
+.control-group select {
+    padding: 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: var(--fs-small);
+}
